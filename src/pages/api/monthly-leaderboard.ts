@@ -1,74 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { MongoClient } from 'mongodb';
 
-// In-memory cache
+// Cache setup matches your bot's configuration
 let cachedData = null;
 let lastUpdateTime = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-if (!process.env.MONGODB_URI) {
-  throw new Error('Please add your Mongo URI to .env');
-}
-
-async function getLeaderboardData() {
-  const client = await MongoClient.connect(process.env.MONGODB_URI);
-  const db = client.db();
-
-  try {
-    // Get current challenge
-    const currentChallenge = await db.collection('challenges')
-      .findOne({ status: 'active' });
-
-    // Get all user progress
-    const usersProgress = await db.collection('userProgress')
-      .find({
-        // Assuming you store monthly progress with a month identifier
-        month: new Date().toISOString().slice(0, 7) // Format: YYYY-MM
-      })
-      .toArray();
-
-    // Get valid users list
-    const validUsers = await db.collection('users')
-      .find({ status: 'active' })
-      .toArray();
-
-    // Transform data into leaderboard format
-    const leaderboard = validUsers
-      .map(user => {
-        const progress = usersProgress.find(p => 
-          p.username.toLowerCase() === user.username.toLowerCase()
-        ) || {};
-
-        return {
-          username: user.username,
-          profileImage: `https://retroachievements.org/UserPic/${user.username}.png`,
-          profileUrl: `https://retroachievements.org/user/${user.username}`,
-          completedAchievements: progress.completedAchievements || 0,
-          totalAchievements: progress.totalAchievements || 0,
-          completionPercentage: progress.completionPercentage || 0
-        };
-      })
-      .filter(user => user.completedAchievements > 0 || user.completionPercentage > 0)
-      .sort((a, b) => {
-        if (b.completionPercentage !== a.completionPercentage) {
-          return b.completionPercentage - a.completionPercentage;
-        }
-        return b.completedAchievements - a.completedAchievements;
-      });
-
-    return {
-      gameInfo: {
-        Title: currentChallenge?.gameName || "Current Challenge",
-        ImageIcon: currentChallenge?.gameIcon || "/Images/093950.png"
-      },
-      leaderboard: leaderboard.slice(0, 10),
-      additionalParticipants: leaderboard.slice(10).map(u => u.username),
-      lastUpdated: new Date().toISOString()
-    };
-  } finally {
-    await client.close();
-  }
-}
 
 export default async function handler(
   req: NextApiRequest,
@@ -85,13 +21,65 @@ export default async function handler(
       return res.status(200).json(cachedData);
     }
 
-    const data = await getLeaderboardData();
+    // Connect to MongoDB
+    const client = await MongoClient.connect(process.env.MONGODB_URI);
+    const db = client.db(process.env.DB_NAME || 'selectstart');
 
-    // Update cache
-    cachedData = data;
-    lastUpdateTime = now;
+    try {
+      // Get current challenge
+      const currentChallenge = await db.collection('challenges')
+        .findOne({ _id: 'current' });
 
-    return res.status(200).json(data);
+      // Get user stats for the current month
+      const stats = await db.collection('userstats')
+        .findOne({ _id: 'stats' });
+
+      // Get valid users list
+      const validUsersDoc = await db.collection('users')
+        .findOne({ _id: 'validUsers' });
+      const validUsers = validUsersDoc?.users || [];
+
+      // Transform data into leaderboard format
+      const leaderboard = validUsers
+        .map(username => {
+          const userStats = stats?.users?.[username.toLowerCase()] || {};
+          const monthlyStats = userStats.monthlyStats?.[new Date().toISOString().slice(0, 7)] || {};
+
+          return {
+            username,
+            profileImage: `https://retroachievements.org/UserPic/${username}.png`,
+            profileUrl: `https://retroachievements.org/user/${username}`,
+            completedAchievements: monthlyStats.completedAchievements || 0,
+            totalAchievements: monthlyStats.totalAchievements || 0,
+            completionPercentage: monthlyStats.completionPercentage || 0,
+            hasBeatenGame: monthlyStats.hasBeatenGame || false
+          };
+        })
+        .filter(user => user.completedAchievements > 0 || user.completionPercentage > 0)
+        .sort((a, b) => {
+          const percentageDiff = b.completionPercentage - a.completionPercentage;
+          if (percentageDiff !== 0) return percentageDiff;
+          return b.completedAchievements - a.completedAchievements;
+        });
+
+      const response = {
+        gameInfo: {
+          Title: currentChallenge?.gameName || "Current Challenge",
+          ImageIcon: currentChallenge?.gameIcon || "/Images/093950.png"
+        },
+        leaderboard: leaderboard.slice(0, 10),
+        additionalParticipants: leaderboard.slice(10).map(u => u.username),
+        lastUpdated: new Date().toISOString()
+      };
+
+      // Update cache
+      cachedData = response;
+      lastUpdateTime = now;
+
+      return res.status(200).json(response);
+    } finally {
+      await client.close();
+    }
   } catch (error) {
     console.error('API Error:', error);
     return res.status(500).json({ 
