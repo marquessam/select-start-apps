@@ -88,17 +88,13 @@ const Leaderboard = () => {
             <h2 className="game-title">{monthlyData.gameInfo.Title}</h2>
           </div>
 
-      
-          
-            <div className="challenge-list mt-4">
-              &gt; This challenge runs from January 1st, 2025 to January 31st, 2025. <br />
-              &gt; Hardcore mode must be enabled<br />
-              &gt; All achievements are eligible<br />
-              &gt; Progress tracked via retroachievements<br />
-              &gt; No hacks/save states/cheats allowed
-              &gt; Any discrepancies, ties, or edge case situations will be judged case by case and settled upon in the multiplayer game of each combatant's choosing.
-            </div>
-
+          <div className="challenge-list mt-4">
+            &gt; This challenge runs from January 1st, 2025 to January 31st, 2025.<br />
+            &gt; Hardcore mode must be enabled<br />
+            &gt; All achievements are eligible<br />
+            &gt; Progress tracked via retroachievements<br />
+            &gt; No hacks/save states/cheats allowed<br />
+            &gt; Any discrepancies, ties, or edge case situations will be judged case by case and settled upon in the multiplayer game of each combatant's choosing.
           </div>
         </>
       )}
