@@ -11,25 +11,60 @@ body {
 
 .tab-container {
   display: flex;
-  gap: 4px;
-  border: 1px solid #2a3a6a;
-  padding: 4px;
-  border-radius: 4px;
-  background-color: #2a3a6a;
+  gap: 0;
   margin-bottom: 20px;
+  width: 100%;
 }
 
 .tab {
   padding: 8px 16px;
-  border-radius: 2px;
   cursor: pointer;
   flex: 1;
   text-align: center;
+  background-color: #2a3a6a;
 }
 
 .tab.active {
   background-color: #5c3391;
-  color: white;
+}
+
+.game-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.game-header img {
+  width: 100px;
+  height: 100px;
+}
+
+.game-title {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.challenge-info {
+  background-color: #2a3a6a;
+  padding: 20px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.challenge-section {
+  margin-bottom: 15px;
+}
+
+.challenge-section h3 {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.challenge-list {
+  background-color: #17254A;
+  padding: 15px;
+  border-radius: 4px;
 }
 
 .leaderboard-entry {
