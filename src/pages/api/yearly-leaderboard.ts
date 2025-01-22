@@ -17,6 +17,19 @@ interface BonusPoint {
   date: string;
 }
 
+interface UserStatsData {
+  yearlyPoints: { [key: string]: number };
+  bonusPoints?: BonusPoint[];
+  achievements?: number;
+}
+
+interface UserStats extends Document {
+  _id: string;
+  users: {
+    [key: string]: UserStatsData;
+  };
+}
+
 interface LeaderboardResponse {
   leaderboard: YearlyEntry[];
   additionalParticipants: string[];
@@ -26,23 +39,6 @@ interface LeaderboardResponse {
 interface ErrorResponse {
   error: string;
   details?: string;
-}
-
-interface UserStats extends Document {
-  _id: string;
-  users: {
-    [key: string]: {
-      yearlyPoints: {
-        [key: string]: number;
-      };
-      bonusPoints?: BonusPoint[];
-    };
-  };
-}
-
-interface ValidUsers extends Document {
-  _id: string;
-  users: string[];
 }
 
 let cachedData: LeaderboardResponse | null = null;
@@ -68,31 +64,38 @@ export default async function handler(
     console.log('Fetching fresh yearly leaderboard data');
     const db = await getMongoDb();
 
-    // Get valid users list with proper typing
-    const validUsersDoc = await db.collection<ValidUsers>('users')
-      .findOne({ _id: 'validUsers' });
-    const validUsers = validUsersDoc?.users || [];
-
-    // Get user stats with proper typing
+    // Get user stats
     const stats = await db.collection<UserStats>('userstats')
       .findOne({ _id: 'stats' });
+
+    if (!stats?.users) {
+      throw new Error('No user stats found');
+    }
+
+    // Get valid users list
+    const validUsersDoc = await db.collection('users')
+      .findOne({ _id: 'validUsers' });
+    const validUsers = validUsersDoc?.users || [];
 
     const currentYear = new Date().getFullYear().toString();
 
     // Transform data into leaderboard format
     const leaderboard = validUsers
       .map(username => {
-        const userStats = stats?.users?.[username.toLowerCase()] || {};
-        const points = userStats.yearlyPoints?.[currentYear] || 0;
-        const bonusPoints = userStats.bonusPoints?.filter(bp => bp.date.startsWith(currentYear)) || [];
+        const userStatsData = stats.users[username.toLowerCase()] || {
+          yearlyPoints: {},
+          bonusPoints: [],
+          achievements: 0
+        };
 
         return {
           username,
           profileImage: `https://retroachievements.org/UserPic/${username}.png`,
           profileUrl: `https://retroachievements.org/user/${username}`,
-          points,
-          achievements: 0, // We'll add this data later if needed
-          bonusPoints
+          points: userStatsData.yearlyPoints[currentYear] || 0,
+          achievements: userStatsData.achievements || 0,
+          bonusPoints: (userStatsData.bonusPoints || [])
+            .filter(bp => bp.date.startsWith(currentYear))
         };
       })
       .filter(user => user.points > 0 || user.bonusPoints.length > 0)
