@@ -66,8 +66,6 @@ const Leaderboard = () => {
 
   return (
     <div>
-      <h1 className="mb-4">January Leaderboards</h1>
-      
       <div className="tab-container">
         <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
              onClick={() => setActiveTab('monthly')}>
@@ -93,23 +91,15 @@ const Leaderboard = () => {
           <div className="challenge-info">
             <div>This challenge runs from January 1st, 2025 to January 31st, 2025.</div>
             
-            <div className="challenge-section">
-              <h3>CHALLENGE PARAMETERS</h3>
-              <div className="challenge-list">
-                &gt; Hardcore mode must be enabled<br />
-                &gt; All achievements are eligible<br />
-                &gt; Progress tracked via retroachievements<br />
-                &gt; No hacks/save states/cheats allowed
-              </div>
+            <div className="challenge-list mt-4">
+              &gt; Hardcore mode must be enabled<br />
+              &gt; All achievements are eligible<br />
+              &gt; Progress tracked via retroachievements<br />
+              &gt; No hacks/save states/cheats allowed
             </div>
 
-            <div className="challenge-section">
-              <h3>REWARD PROTOCOL</h3>
-              <div className="challenge-list">
-                &gt; 🥇 5 pts<br />
-                &gt; 🥈 3 pts<br />
-                &gt; 🥉 2 pts
-              </div>
+            <div className="mt-4">
+              Any discrepancies, ties, or edge case situations will be judged case by case and settled upon in the multiplayer game of each combatant's choosing.
             </div>
           </div>
         </>
