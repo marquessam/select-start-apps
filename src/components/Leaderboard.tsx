@@ -66,7 +66,7 @@ const Leaderboard = () => {
 
   return (
     <div>
-      <h1>January Leaderboards</h1>
+      <h1 className="mb-4">January Leaderboards</h1>
       
       <div className="tab-container">
         <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
@@ -81,18 +81,36 @@ const Leaderboard = () => {
 
       {activeTab === 'monthly' && monthlyData.gameInfo && (
         <>
-          <div>
+          <div className="game-header">
             <img src={`https://retroachievements.org${monthlyData.gameInfo.ImageIcon}`} 
-                alt={monthlyData.gameInfo.Title}
-                style={{ width: '100px', height: '100px' }} />
-            <h2>{monthlyData.gameInfo.Title}</h2>
+                 alt={monthlyData.gameInfo.Title}
+                 onError={(e) => {
+                   e.currentTarget.src = 'https://retroachievements.org/Images/017657.png';
+                 }} />
+            <h2 className="game-title">{monthlyData.gameInfo.Title}</h2>
           </div>
 
-          <div>
-            This challenge runs from January 1st, 2025 to January 31st, 2025 as part of the gaming community
-            Select Start. All players must have hardcore mode turned on for RetroAchievements. Any
-            discrepancies, ties, or edge case situations will be judged case by case and settled upon in the
-            multiplayer game of each combatant's choosing.
+          <div className="challenge-info">
+            <div>This challenge runs from January 1st, 2025 to January 31st, 2025.</div>
+            
+            <div className="challenge-section">
+              <h3>CHALLENGE PARAMETERS</h3>
+              <div className="challenge-list">
+                &gt; Hardcore mode must be enabled<br />
+                &gt; All achievements are eligible<br />
+                &gt; Progress tracked via retroachievements<br />
+                &gt; No hacks/save states/cheats allowed
+              </div>
+            </div>
+
+            <div className="challenge-section">
+              <h3>REWARD PROTOCOL</h3>
+              <div className="challenge-list">
+                &gt; 🥇 5 pts<br />
+                &gt; 🥈 3 pts<br />
+                &gt; 🥉 2 pts
+              </div>
+            </div>
           </div>
         </>
       )}
@@ -134,7 +152,7 @@ const Leaderboard = () => {
         ))}
       </div>
 
-      <div>
+      <div className="mt-4 text-gray-400 text-sm text-center">
         Last updated: {new Date(currentData.lastUpdated).toLocaleString()}
       </div>
     </div>
