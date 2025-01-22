@@ -2,13 +2,6 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getMongoDb } from '@/utils/mongodb';
 import { Document, Filter } from 'mongodb';
 
-interface MonthlyStats {
-  completedAchievements: number;
-  totalAchievements: number;
-  completionPercentage: number;
-  hasBeatenGame: boolean;
-}
-
 interface LeaderboardEntry {
   username: string;
   profileImage: string;
@@ -36,14 +29,19 @@ interface ErrorResponse {
   details?: string;
 }
 
+interface UserMonthlyStats {
+  monthlyAchievements: {
+    [year: string]: {
+      [month: string]: number;
+    };
+  };
+  completedGames: Record<string, boolean>;
+}
+
 interface UserStats extends Document {
   _id: 'stats';
   users: {
-    [key: string]: {
-      monthlyStats?: {
-        [key: string]: MonthlyStats;
-      };
-    };
+    [username: string]: UserMonthlyStats;
   };
 }
 
@@ -51,11 +49,7 @@ interface Challenge extends Document {
   _id: 'current';
   gameName?: string;
   gameIcon?: string;
-}
-
-interface ValidUsers extends Document {
-  _id: 'validUsers';
-  users: string[];
+  totalAchievements?: number;
 }
 
 let cachedData: LeaderboardResponse | null = null;
@@ -80,35 +74,47 @@ export default async function handler(
     console.log('Fetching fresh leaderboard data');
     const db = await getMongoDb();
 
+    // Get challenge info
     const currentChallenge = await db.collection<Challenge>('challenges')
       .findOne({ _id: 'current' } as Filter<Challenge>);
 
+    // Get user stats
     const stats = await db.collection<UserStats>('userstats')
       .findOne({ _id: 'stats' } as Filter<UserStats>);
 
-    const validUsersDoc = await db.collection<ValidUsers>('users')
-      .findOne({ _id: 'validUsers' } as Filter<ValidUsers>);
-    const validUsers = validUsersDoc?.users || [];
+    if (!stats?.users) {
+      throw new Error('No user stats found');
+    }
 
-    console.log(`Processing ${validUsers.length} users`);
+    // Get the current month in the format used in your data (YYYY-M)
+    const date = new Date();
+    const year = date.getFullYear().toString();
+    const monthIndex = date.getMonth(); // 0-11
+    const currentMonthKey = `${year}-${monthIndex}`; // Matches your "2025-0" format
 
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    const leaderboard = validUsers
-      .map(username => {
-        const userStats = stats?.users?.[username.toLowerCase()] || { monthlyStats: {} };
-        const monthStats = (userStats.monthlyStats?.[currentMonth] || {}) as MonthlyStats;
+    // Transform data into leaderboard format
+    const leaderboard = Object.entries(stats.users)
+      .map(([username, userData]) => {
+        const achievementsThisMonth = 
+          userData.monthlyAchievements?.[year]?.[currentMonthKey] || 0;
+
+        // Calculate percentage based on total achievements from challenge
+        const totalPossibleAchievements = currentChallenge?.totalAchievements || 77; // Fallback to 77 if not specified
+        const completionPercentage = totalPossibleAchievements > 0
+          ? (achievementsThisMonth / totalPossibleAchievements) * 100
+          : 0;
 
         return {
           username,
           profileImage: `https://retroachievements.org/UserPic/${username}.png`,
           profileUrl: `https://retroachievements.org/user/${username}`,
-          completedAchievements: monthStats.completedAchievements || 0,
-          totalAchievements: monthStats.totalAchievements || 0,
-          completionPercentage: monthStats.completionPercentage || 0,
-          hasBeatenGame: monthStats.hasBeatenGame || false
+          completedAchievements: achievementsThisMonth,
+          totalAchievements: totalPossibleAchievements,
+          completionPercentage: parseFloat(completionPercentage.toFixed(2)),
+          hasBeatenGame: !!userData.completedGames?.[currentMonthKey]
         };
       })
-      .filter(user => user.completedAchievements > 0 || user.completionPercentage > 0)
+      .filter(user => user.completedAchievements > 0)
       .sort((a, b) => {
         const percentageDiff = b.completionPercentage - a.completionPercentage;
         if (percentageDiff !== 0) return percentageDiff;
@@ -125,6 +131,7 @@ export default async function handler(
       lastUpdated: new Date().toISOString()
     };
 
+    // Update cache
     cachedData = response;
     lastUpdateTime = now;
 
