@@ -29,6 +29,31 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const getCurrentMonthInfo = () => {
+    const now = new Date();
+    const monthName = now.toLocaleString('default', { month: 'long' });
+    const year = now.getFullYear();
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    nextMonth.setDate(nextMonth.getDate() - 1);
+    
+    return {
+      monthName,
+      year,
+      startDate: `${monthName} 1st, ${year}`,
+      endDate: `${monthName} ${nextMonth.getDate()}${getDaySuffix(nextMonth.getDate())}, ${year}`
+    };
+  };
+
+  const getDaySuffix = (day: number): string => {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 300000); // 5 minutes
@@ -85,11 +110,13 @@ const Leaderboard = () => {
 
   if (!monthlyData) return null;
 
+  const { monthName, startDate, endDate } = getCurrentMonthInfo();
+
   return (
     <div className="w-full max-w-4xl mx-auto bg-[#17254A] text-white">
       {/* Header */}
       <div className="p-8">
-        <h1 className="text-4xl font-bold text-center mb-8">January Leaderboards</h1>
+        <h1 className="text-4xl font-bold text-center mb-8">{monthName} Leaderboards</h1>
       </div>
 
       {/* Game Info */}
@@ -114,7 +141,7 @@ const Leaderboard = () => {
 
       {/* Challenge Info */}
       <div className="bg-[#1b2d5c] p-6 mx-4 rounded-lg mb-8 text-sm">
-        This challenge runs from January 1st, 2024 to January 31st, 2025 as part of the gaming community
+        This challenge runs from {startDate} to {endDate} as part of the gaming community
         Select Start. All players must have hardcore mode turned on for RetroAchievements. Any
         discrepancies, ties, or edge case situations will be judged case by case and settled upon in the
         multiplayer game of each combatant's choosing.
