@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getMongoDb } from '@/utils/mongodb';
-import { Document } from 'mongodb';
+import { Document, Filter } from 'mongodb';
 
 interface YearlyEntry {
   username: string;
@@ -28,6 +28,11 @@ interface UserStats extends Document {
   users: {
     [key: string]: UserStatsData;
   };
+}
+
+interface ValidUsers extends Document {
+  _id: 'validUsers';
+  users: string[];
 }
 
 interface LeaderboardResponse {
@@ -64,17 +69,17 @@ export default async function handler(
     console.log('Fetching fresh yearly leaderboard data');
     const db = await getMongoDb();
 
-    // Get user stats
+    // Get user stats with proper typing
     const stats = await db.collection<UserStats>('userstats')
-      .findOne({ _id: 'stats' });
+      .findOne({ _id: 'stats' } as Filter<UserStats>);
 
     if (!stats?.users) {
       throw new Error('No user stats found');
     }
 
-    // Get valid users list
-    const validUsersDoc = await db.collection('users')
-      .findOne({ _id: 'validUsers' });
+    // Get valid users list with proper typing
+    const validUsersDoc = await db.collection<ValidUsers>('users')
+      .findOne({ _id: 'validUsers' } as Filter<ValidUsers>);
     const validUsers = validUsersDoc?.users || [];
 
     const currentYear = new Date().getFullYear().toString();
