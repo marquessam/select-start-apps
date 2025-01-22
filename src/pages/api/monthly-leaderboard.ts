@@ -2,6 +2,13 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getMongoDb } from '@/utils/mongodb';
 import { Document } from 'mongodb';
 
+interface MonthlyStats {
+  completedAchievements: number;
+  totalAchievements: number;
+  completionPercentage: number;
+  hasBeatenGame: boolean;
+}
+
 interface LeaderboardEntry {
   username: string;
   profileImage: string;
@@ -29,20 +36,17 @@ interface ErrorResponse {
   details?: string;
 }
 
+interface UserStatsData {
+  monthlyStats?: {
+    [key: string]: MonthlyStats;
+  };
+}
+
 interface UserStats extends Document {
   _id: string;
   users: {
-    [key: string]: {
-      monthlyStats?: {
-        [key: string]: {
-          completedAchievements: number;
-          totalAchievements: number;
-          completionPercentage: number;
-          hasBeatenGame: boolean;
-        }
-      }
-    }
-  }
+    [key: string]: UserStatsData;
+  };
 }
 
 interface Challenge extends Document {
@@ -56,7 +60,6 @@ interface ValidUsers extends Document {
   users: string[];
 }
 
-// Cache setup with type
 let cachedData: LeaderboardResponse | null = null;
 let lastUpdateTime: number | null = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -99,17 +102,17 @@ export default async function handler(
     const currentMonth = new Date().toISOString().slice(0, 7);
     const leaderboard = validUsers
       .map(username => {
-        const userStats = stats?.users?.[username.toLowerCase()] || {};
-        const monthlyStats = userStats.monthlyStats?.[currentMonth] || {};
+        const userStats = stats?.users?.[username.toLowerCase()] || { monthlyStats: {} };
+        const monthStats = (userStats.monthlyStats?.[currentMonth] || {}) as MonthlyStats;
 
         return {
           username,
           profileImage: `https://retroachievements.org/UserPic/${username}.png`,
           profileUrl: `https://retroachievements.org/user/${username}`,
-          completedAchievements: monthlyStats.completedAchievements || 0,
-          totalAchievements: monthlyStats.totalAchievements || 0,
-          completionPercentage: monthlyStats.completionPercentage || 0,
-          hasBeatenGame: monthlyStats.hasBeatenGame || false
+          completedAchievements: monthStats.completedAchievements || 0,
+          totalAchievements: monthStats.totalAchievements || 0,
+          completionPercentage: monthStats.completionPercentage || 0,
+          hasBeatenGame: monthStats.hasBeatenGame || false
         };
       })
       .filter(user => user.completedAchievements > 0 || user.completionPercentage > 0)
