@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getMongoDb } from '@/utils/mongodb';
-import { Document } from 'mongodb';
+import { Document, Filter } from 'mongodb';
 
 interface MonthlyStats {
   completedAchievements: number;
@@ -36,27 +36,25 @@ interface ErrorResponse {
   details?: string;
 }
 
-interface UserStatsData {
-  monthlyStats?: {
-    [key: string]: MonthlyStats;
-  };
-}
-
 interface UserStats extends Document {
-  _id: string;
+  _id: 'stats';
   users: {
-    [key: string]: UserStatsData;
+    [key: string]: {
+      monthlyStats?: {
+        [key: string]: MonthlyStats;
+      };
+    };
   };
 }
 
 interface Challenge extends Document {
-  _id: string;
+  _id: 'current';
   gameName?: string;
   gameIcon?: string;
 }
 
 interface ValidUsers extends Document {
-  _id: string;
+  _id: 'validUsers';
   users: string[];
 }
 
@@ -73,7 +71,6 @@ export default async function handler(
   }
 
   try {
-    // Check cache
     const now = Date.now();
     if (cachedData && lastUpdateTime && (now - lastUpdateTime < CACHE_DURATION)) {
       console.log('Returning cached leaderboard data');
@@ -83,22 +80,18 @@ export default async function handler(
     console.log('Fetching fresh leaderboard data');
     const db = await getMongoDb();
 
-    // Get current challenge with proper typing
     const currentChallenge = await db.collection<Challenge>('challenges')
-      .findOne({ _id: 'current' });
+      .findOne({ _id: 'current' } as Filter<Challenge>);
 
-    // Get user stats with proper typing
     const stats = await db.collection<UserStats>('userstats')
-      .findOne({ _id: 'stats' });
+      .findOne({ _id: 'stats' } as Filter<UserStats>);
 
-    // Get valid users list with proper typing
     const validUsersDoc = await db.collection<ValidUsers>('users')
-      .findOne({ _id: 'validUsers' });
+      .findOne({ _id: 'validUsers' } as Filter<ValidUsers>);
     const validUsers = validUsersDoc?.users || [];
 
     console.log(`Processing ${validUsers.length} users`);
 
-    // Transform data into leaderboard format
     const currentMonth = new Date().toISOString().slice(0, 7);
     const leaderboard = validUsers
       .map(username => {
@@ -132,7 +125,6 @@ export default async function handler(
       lastUpdated: new Date().toISOString()
     };
 
-    // Update cache
     cachedData = response;
     lastUpdateTime = now;
 
