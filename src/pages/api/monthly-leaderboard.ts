@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getMongoDb } from '@/utils/mongodb';
+import { Document } from 'mongodb';
 
 interface LeaderboardEntry {
   username: string;
@@ -28,6 +29,33 @@ interface ErrorResponse {
   details?: string;
 }
 
+interface UserStats extends Document {
+  _id: string;
+  users: {
+    [key: string]: {
+      monthlyStats?: {
+        [key: string]: {
+          completedAchievements: number;
+          totalAchievements: number;
+          completionPercentage: number;
+          hasBeatenGame: boolean;
+        }
+      }
+    }
+  }
+}
+
+interface Challenge extends Document {
+  _id: string;
+  gameName?: string;
+  gameIcon?: string;
+}
+
+interface ValidUsers extends Document {
+  _id: string;
+  users: string[];
+}
+
 // Cache setup with type
 let cachedData: LeaderboardResponse | null = null;
 let lastUpdateTime: number | null = null;
@@ -52,16 +80,16 @@ export default async function handler(
     console.log('Fetching fresh leaderboard data');
     const db = await getMongoDb();
 
-    // Get current challenge
-    const currentChallenge = await db.collection('challenges')
+    // Get current challenge with proper typing
+    const currentChallenge = await db.collection<Challenge>('challenges')
       .findOne({ _id: 'current' });
 
-    // Get user stats
-    const stats = await db.collection('userstats')
+    // Get user stats with proper typing
+    const stats = await db.collection<UserStats>('userstats')
       .findOne({ _id: 'stats' });
 
-    // Get valid users list
-    const validUsersDoc = await db.collection('users')
+    // Get valid users list with proper typing
+    const validUsersDoc = await db.collection<ValidUsers>('users')
       .findOne({ _id: 'validUsers' });
     const validUsers = validUsersDoc?.users || [];
 
