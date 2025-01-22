@@ -1,27 +1,57 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getMongoDb } from '@/utils/mongodb';
+import { Document } from 'mongodb';
 
-let cachedData = null;
-let lastUpdateTime = null;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-async function fetchWithRetry(url: string, options = {}, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(url, options);
-      if (response.ok) {
-        return response;
-      }
-    } catch (error) {
-      if (i === retries - 1) throw error;
-    }
-    await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
-  }
-  throw new Error(`Failed after ${retries} retries`);
+interface YearlyEntry {
+  username: string;
+  profileImage: string;
+  profileUrl: string;
+  points: number;
+  achievements: number;
+  bonusPoints: BonusPoint[];
 }
+
+interface BonusPoint {
+  reason: string;
+  points: number;
+  date: string;
+}
+
+interface LeaderboardResponse {
+  leaderboard: YearlyEntry[];
+  additionalParticipants: string[];
+  lastUpdated: string;
+}
+
+interface ErrorResponse {
+  error: string;
+  details?: string;
+}
+
+interface UserStats extends Document {
+  _id: string;
+  users: {
+    [key: string]: {
+      yearlyPoints: {
+        [key: string]: number;
+      };
+      bonusPoints?: BonusPoint[];
+    };
+  };
+}
+
+interface ValidUsers extends Document {
+  _id: string;
+  users: string[];
+}
+
+let cachedData: LeaderboardResponse | null = null;
+let lastUpdateTime: number | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<LeaderboardResponse | ErrorResponse>
 ) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -31,24 +61,44 @@ export default async function handler(
     // Check cache
     const now = Date.now();
     if (cachedData && lastUpdateTime && (now - lastUpdateTime < CACHE_DURATION)) {
+      console.log('Returning cached yearly leaderboard data');
       return res.status(200).json(cachedData);
     }
 
-    // Fetch yearly points data from your database URL
-    const YEARLY_DATA_URL = process.env.YEARLY_POINTS_URL;
-    const response = await fetchWithRetry(YEARLY_DATA_URL);
-    const data = await response.json();
+    console.log('Fetching fresh yearly leaderboard data');
+    const db = await getMongoDb();
 
-    // Transform the data into the leaderboard format
-    const leaderboard = data.points.map(user => ({
-      username: user.username,
-      profileImage: `https://retroachievements.org/UserPic/${user.username}.png`,
-      profileUrl: `https://retroachievements.org/user/${user.username}`,
-      points: user.points || 0,
-      bonusPoints: user.bonusPoints || []
-    })).sort((a, b) => b.points - a.points);
+    // Get valid users list with proper typing
+    const validUsersDoc = await db.collection<ValidUsers>('users')
+      .findOne({ _id: 'validUsers' });
+    const validUsers = validUsersDoc?.users || [];
 
-    const response = {
+    // Get user stats with proper typing
+    const stats = await db.collection<UserStats>('userstats')
+      .findOne({ _id: 'stats' });
+
+    const currentYear = new Date().getFullYear().toString();
+
+    // Transform data into leaderboard format
+    const leaderboard = validUsers
+      .map(username => {
+        const userStats = stats?.users?.[username.toLowerCase()] || {};
+        const points = userStats.yearlyPoints?.[currentYear] || 0;
+        const bonusPoints = userStats.bonusPoints?.filter(bp => bp.date.startsWith(currentYear)) || [];
+
+        return {
+          username,
+          profileImage: `https://retroachievements.org/UserPic/${username}.png`,
+          profileUrl: `https://retroachievements.org/user/${username}`,
+          points,
+          achievements: 0, // We'll add this data later if needed
+          bonusPoints
+        };
+      })
+      .filter(user => user.points > 0 || user.bonusPoints.length > 0)
+      .sort((a, b) => b.points - a.points);
+
+    const response: LeaderboardResponse = {
       leaderboard: leaderboard.slice(0, 10),
       additionalParticipants: leaderboard.slice(10).map(u => u.username),
       lastUpdated: new Date().toISOString()
@@ -58,12 +108,13 @@ export default async function handler(
     cachedData = response;
     lastUpdateTime = now;
 
+    console.log('Successfully fetched and processed yearly leaderboard data');
     return res.status(200).json(response);
   } catch (error) {
     console.error('API Error:', error);
     return res.status(500).json({ 
       error: 'Failed to fetch yearly leaderboard data',
-      details: error.message
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 }
