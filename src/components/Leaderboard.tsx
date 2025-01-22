@@ -4,10 +4,11 @@ interface LeaderboardEntry {
   username: string;
   profileImage: string;
   profileUrl: string;
-  completedAchievements: number;
-  totalAchievements: number;
-  completionPercentage: number;
-  hasBeatenGame: boolean;
+  completedAchievements?: number;
+  totalAchievements?: number;
+  completionPercentage?: number;
+  hasBeatenGame?: boolean;
+  points?: number;
 }
 
 interface GameInfo {
@@ -16,7 +17,7 @@ interface GameInfo {
 }
 
 interface LeaderboardData {
-  gameInfo: GameInfo;
+  gameInfo?: GameInfo;
   leaderboard: LeaderboardEntry[];
   additionalParticipants: string[];
   lastUpdated: string;
@@ -25,6 +26,7 @@ interface LeaderboardData {
 const Leaderboard = () => {
   const [activeTab, setActiveTab] = useState('monthly');
   const [monthlyData, setMonthlyData] = useState<LeaderboardData | null>(null);
+  const [yearlyData, setYearlyData] = useState<LeaderboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,10 +38,18 @@ const Leaderboard = () => {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('/api/monthly-leaderboard');
-      if (!response.ok) throw new Error('Failed to fetch data');
-      const data = await response.json();
-      setMonthlyData(data);
+      const [monthlyResponse, yearlyResponse] = await Promise.all([
+        fetch('/api/monthly-leaderboard'),
+        fetch('/api/yearly-leaderboard')
+      ]);
+      
+      if (!monthlyResponse.ok || !yearlyResponse.ok) throw new Error('Failed to fetch data');
+      
+      const monthlyData = await monthlyResponse.json();
+      const yearlyData = await yearlyResponse.json();
+      
+      setMonthlyData(monthlyData);
+      setYearlyData(yearlyData);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -50,7 +60,9 @@ const Leaderboard = () => {
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
-  if (!monthlyData) return null;
+  if (!monthlyData || !yearlyData) return null;
+
+  const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
 
   return (
     <div>
@@ -67,22 +79,26 @@ const Leaderboard = () => {
         </div>
       </div>
 
-      <div>
-        <img src={`https://retroachievements.org${monthlyData.gameInfo.ImageIcon}`} 
-             alt={monthlyData.gameInfo.Title}
-             style={{ width: '100px', height: '100px' }} />
-        <h2>{monthlyData.gameInfo.Title}</h2>
-      </div>
+      {activeTab === 'monthly' && monthlyData.gameInfo && (
+        <>
+          <div>
+            <img src={`https://retroachievements.org${monthlyData.gameInfo.ImageIcon}`} 
+                alt={monthlyData.gameInfo.Title}
+                style={{ width: '100px', height: '100px' }} />
+            <h2>{monthlyData.gameInfo.Title}</h2>
+          </div>
+
+          <div>
+            This challenge runs from January 1st, 2025 to January 31st, 2025 as part of the gaming community
+            Select Start. All players must have hardcore mode turned on for RetroAchievements. Any
+            discrepancies, ties, or edge case situations will be judged case by case and settled upon in the
+            multiplayer game of each combatant's choosing.
+          </div>
+        </>
+      )}
 
       <div>
-        This challenge runs from January 1st, 2025 to January 31st, 2025 as part of the gaming community
-        Select Start. All players must have hardcore mode turned on for RetroAchievements. Any
-        discrepancies, ties, or edge case situations will be judged case by case and settled upon in the
-        multiplayer game of each combatant's choosing.
-      </div>
-
-      <div>
-        {monthlyData.leaderboard.map((entry, index) => (
+        {currentData.leaderboard.map((entry, index) => (
           <div key={entry.username} className="leaderboard-entry">
             <div className={`rank ${
               index === 0 ? 'medal-gold' : 
@@ -105,15 +121,21 @@ const Leaderboard = () => {
                  className="username">
                 {entry.username}
               </a>
-              <div>{entry.completedAchievements}/{entry.totalAchievements}</div>
-              <div>{entry.completionPercentage}%</div>
+              {activeTab === 'monthly' ? (
+                <>
+                  <div>{entry.completedAchievements}/{entry.totalAchievements}</div>
+                  <div>{entry.completionPercentage}%</div>
+                </>
+              ) : (
+                <div>{entry.points} points</div>
+              )}
             </div>
           </div>
         ))}
       </div>
 
       <div>
-        Last updated: {new Date(monthlyData.lastUpdated).toLocaleString()}
+        Last updated: {new Date(currentData.lastUpdated).toLocaleString()}
       </div>
     </div>
   );
