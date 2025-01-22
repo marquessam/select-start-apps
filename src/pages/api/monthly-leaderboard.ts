@@ -1,14 +1,41 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getMongoDb } from '@/utils/mongodb';
 
-// Cache setup
-let cachedData = null;
-let lastUpdateTime = null;
+interface LeaderboardEntry {
+  username: string;
+  profileImage: string;
+  profileUrl: string;
+  completedAchievements: number;
+  totalAchievements: number;
+  completionPercentage: number;
+  hasBeatenGame: boolean;
+}
+
+interface GameInfo {
+  Title: string;
+  ImageIcon: string;
+}
+
+interface LeaderboardResponse {
+  gameInfo: GameInfo;
+  leaderboard: LeaderboardEntry[];
+  additionalParticipants: string[];
+  lastUpdated: string;
+}
+
+interface ErrorResponse {
+  error: string;
+  details?: string;
+}
+
+// Cache setup with type
+let cachedData: LeaderboardResponse | null = null;
+let lastUpdateTime: number | null = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<LeaderboardResponse | ErrorResponse>
 ) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -64,7 +91,7 @@ export default async function handler(
         return b.completedAchievements - a.completedAchievements;
       });
 
-    const response = {
+    const response: LeaderboardResponse = {
       gameInfo: {
         Title: currentChallenge?.gameName || "Current Challenge",
         ImageIcon: currentChallenge?.gameIcon || "/Images/093950.png"
@@ -84,7 +111,7 @@ export default async function handler(
     console.error('API Error:', error);
     return res.status(500).json({ 
       error: 'Failed to fetch leaderboard data',
-      details: error.message
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 }
