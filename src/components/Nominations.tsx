@@ -71,20 +71,20 @@ const Nominations = () => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const sendHeight = () => {
-      const height = document.documentElement.scrollHeight;
-      window.parent.postMessage({
-        type: 'resize',
-        height: height
-      }, '*');
-    };
+ useEffect(() => {
+  function updateHeight() {
+    const height = document.body.offsetHeight;
+    window.parent.postMessage({
+      type: 'resize',
+      height: height
+    }, '*');
+  }
 
-    // Send height after content changes
-    if (data) {
-      setTimeout(sendHeight, 100);
-    }
-  }, [data]);
+  // Update height when content changes
+  updateHeight();
+}, [data]); // For Nominations
+// OR
+}, [monthlyData, yearlyData, activeTab]); // For Leaderboard
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
