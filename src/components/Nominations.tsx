@@ -15,6 +15,7 @@ interface NominationsData {
 
 const platformFullNames: { [key: string]: string } = {
   'NES': 'Nintendo Entertainment System',
+  'SNES': 'Super Nintendo',
   'GB': 'Nintendo Game Boy',
   'GBC': 'Nintendo Game Boy Color',
   'GBA': 'Nintendo Game Boy Advance',
@@ -49,7 +50,7 @@ const Nominations = () => {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 300000); // Refresh every 5 minutes
+    const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, []);
 
@@ -80,19 +81,19 @@ const Nominations = () => {
           Object.entries(groupedNominations)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([platform, nominations]) => (
-              <div key={platform} className="bg-slate-800/50 rounded-lg p-4">
-                <h3 className="text-lg font-semibold mb-4 px-3 py-2 bg-slate-800 rounded-md text-slate-100">
+              <div key={platform} className="rounded-lg bg-slate-800/80 p-6">
+                <h3 className="text-xl font-semibold mb-4 text-slate-100">
                   {platformFullNames[platform] || platform}
                 </h3>
                 <div className="space-y-3">
                   {nominations.map((nom, index) => (
                     <div 
                       key={`${nom.game}-${index}`}
-                      className="px-4 py-2 bg-slate-800/30 rounded-md hover:bg-slate-800 transition-colors"
+                      className="px-4 py-3 bg-slate-900/90 rounded-md"
                     >
                       <div>
                         <span className="font-medium">{nom.game}</span>{' '}
-                        <span className="text-emerald-400">
+                        <span className="text-[#32CD32]">
                           nominated by {nom.discordUsername}
                         </span>
                       </div>
