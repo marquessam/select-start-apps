@@ -9,7 +9,7 @@ body {
     Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
-/* Existing styles */
+/* Leaderboard Styles */
 .tab-container {
   display: flex;
   gap: 0;
@@ -90,41 +90,31 @@ body {
   color: #5c3391;
 }
 
-/* New Nomination Styles */
-/* Update the nomination styles in your globals.css */
-
-/* Update these styles in your globals.css */
-
+/* Nomination Styles */
 .nomination-section {
   background-color: #2a3a6a;
-  padding: 12px;
+  margin-bottom: 16px;
   border-radius: 4px;
-  overflow: visible; /* Ensure no scrolling */
+  overflow: hidden;
 }
 
-.nomination-entries {
-  background-color: #17254A;
-  border-radius: 4px;
-  overflow: visible; /* Ensure no scrolling */
+.nomination-section h3 {
+  background-color: #1f2b4d;
+  padding: 12px 16px;
+  margin: 0;
+  font-weight: bold;
 }
+
 .nomination-entry {
-  border-bottom: 1px solid #2a3a6a;
+  padding: 8px 16px;
+  border-top: 1px solid #1f2b4d;
 }
 
-.nomination-entry:last-child {
-  border-bottom: none;
+.nomination-entry:first-child {
+  border-top: none;
 }
 
 .nominated-by {
   color: #32CD32;
-  opacity: 0.9;
-}
-
-.last-updated {
-  color: #8892b0;
-  text-align: center;
-  font-size: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #2a3a6a;
+  margin-left: 8px;
 }
