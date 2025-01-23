@@ -34,18 +34,15 @@ const Leaderboard = () => {
     function sendHeight() {
       const content = document.getElementById('leaderboard-content');
       if (content) {
-        // Calculate actual content height
-        const contentHeight = content.scrollHeight;
+        const height = content.scrollHeight;
         window.parent.postMessage({
           type: 'resize',
-          height: contentHeight + 20 // Small padding to prevent cutting off
+          height: height + 20
         }, '*');
       }
     }
 
-    // Send height after data/tab changes
     if (monthlyData || yearlyData) {
-      // Small delay to ensure content is rendered
       setTimeout(sendHeight, 100);
     }
   }, [monthlyData, yearlyData, activeTab]);
@@ -84,79 +81,121 @@ const Leaderboard = () => {
 
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
 
-return (
-    <div id="nominations-content" style={{ 
-      backgroundColor: '#17254A',
-      color: 'white',
-      minHeight: '100vh' // Ensure it takes full height
-    }}>
-      <div style={{ 
-        padding: '12px 16px',
-        borderBottom: '1px solid #2a3a6a',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-      }}>
-        <span role="img" aria-label="game controller" style={{ fontSize: '1.5rem' }}>🎮</span>
-        <h2 style={{ 
-          fontSize: '1.5rem',
-          fontWeight: 'bold',
-          margin: 0
-        }}>Game Nominations</h2>
+  return (
+    <div id="leaderboard-content" className="bg-[#17254A]" style={{ minHeight: 'min-content' }}>
+      <div className="tab-container" style={{ margin: 0 }}>
+        <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
+             onClick={() => setActiveTab('monthly')}>
+          Monthly Challenge
+        </div>
+        <div className={`tab ${activeTab === 'yearly' ? 'active' : ''}`}
+             onClick={() => setActiveTab('yearly')}>
+          Yearly Rankings
+        </div>
       </div>
 
-      <div>
-        {platformOrder
-          .filter(platform => groupedNominations[platform])
-          .map((platform) => (
-            <div key={platform} style={{ marginBottom: '2px' }}>
-              <div style={{ 
-                backgroundColor: '#2a3a6a',
-                padding: '12px 16px'
-              }}>
-                <h3 style={{
-                  fontSize: '1.125rem',
-                  fontWeight: 'bold',
-                  margin: 0
-                }}>{platformFullNames[platform] || platform}</h3>
+      {activeTab === 'monthly' && monthlyData.gameInfo && (
+        <>
+          <div className="game-header">
+            <img src={`https://retroachievements.org${monthlyData.gameInfo.ImageIcon}`} 
+                 alt={monthlyData.gameInfo.Title}
+                 onError={(e) => {
+                   e.currentTarget.src = 'https://retroachievements.org/Images/017657.png';
+                 }} />
+            <h2 className="game-title">{monthlyData.gameInfo.Title}</h2>
+          </div>
+
+          <div className="challenge-list">
+            &gt; This challenge runs from January 1st, 2025 to January 31st, 2025.<br />
+            &gt; Hardcore mode must be enabled<br />
+            &gt; All achievements are eligible<br />
+            &gt; Progress tracked via retroachievements<br />
+            &gt; No hacks/save states/cheats allowed<br />
+            &gt; Any discrepancies, ties, or edge case situations will be judged case by case and settled upon in the multiplayer game of each combatant's choosing.
+          </div>
+        </>
+      )}
+
+      <div style={{ padding: '0 12px' }}>
+        {currentData.leaderboard.map((entry, index) => (
+          <div key={entry.username} className="leaderboard-entry" style={{ 
+            marginBottom: index === currentData.leaderboard.length - 1 ? 0 : '8px',
+            padding: '8px',
+            flexWrap: 'wrap'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              minWidth: '80px'
+            }}>
+              <div className={`rank ${
+                index === 0 ? 'medal-gold' : 
+                index === 1 ? 'medal-silver' : 
+                index === 2 ? 'medal-bronze' : ''
+              }`}>
+                #{index + 1}
               </div>
-              {groupedNominations[platform].map((nom, index) => (
-                <div 
-                  key={`${nom.game}-${index}`}
-                  style={{
-                    padding: '10px 16px',
-                    backgroundColor: '#1f2b4d'
-                  }}
-                >
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px'
-                  }}>
-                    <span style={{ fontWeight: '500' }}>{nom.game}</span>
-                    <span style={{ 
-                      color: '#32CD32',
-                      fontSize: '0.875rem'
-                    }}>nominated by {nom.discordUsername}</span>
-                  </div>
-                </div>
-              ))}
+              {index < 3 && <div>{index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}</div>}
             </div>
-          ))}
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              flex: 1,
+              minWidth: 0,
+              maxWidth: '100%'
+            }}>
+              <img src={entry.profileImage}
+                   alt={entry.username}
+                   className="profile-image"
+                   style={{ width: '40px', height: '40px' }}
+                   onError={(e) => {
+                     e.currentTarget.src = 'https://retroachievements.org/UserPic/_user.png';
+                   }} />
+              <div style={{ 
+                flex: 1,
+                minWidth: 0,
+                overflow: 'hidden'
+              }}>
+                <a href={entry.profileUrl} 
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="username"
+                   style={{ 
+                     display: 'block',
+                     textOverflow: 'ellipsis',
+                     overflow: 'hidden',
+                     whiteSpace: 'nowrap'
+                   }}>
+                  {entry.username}
+                </a>
+                {activeTab === 'monthly' ? (
+                  <div style={{ fontSize: '0.9em' }}>
+                    <div>{entry.completedAchievements}/{entry.totalAchievements}</div>
+                    <div>{entry.completionPercentage}%</div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.9em' }}>{entry.points} points</div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div style={{
-        textAlign: 'center',
+      <div style={{ 
         fontSize: '0.875rem',
         color: '#8892b0',
-        padding: '16px',
+        textAlign: 'center',
+        padding: '12px',
         borderTop: '1px solid #2a3a6a',
-        marginTop: '16px'
+        marginTop: '12px'
       }}>
-        Last updated: {new Date(data.lastUpdated).toLocaleString()}
+        Last updated: {new Date(currentData.lastUpdated).toLocaleString()}
       </div>
     </div>
   );
 };
 
-export default Nominations;
+export default Leaderboard;
