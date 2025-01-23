@@ -54,17 +54,33 @@ const Nominations = () => {
     function sendHeight() {
       const content = document.getElementById('nominations-content');
       if (content) {
-        const height = content.scrollHeight;
+        // Get the actual full height of all content
+        const fullHeight = Array.from(content.children)
+          .reduce((total, child) => total + child.scrollHeight, 0);
+        
+        // Add extra padding to ensure everything is visible
+        const heightWithPadding = fullHeight + 100;
+        
         window.parent.postMessage({
           type: 'resize',
-          height: height + 50 // Add padding to ensure no cutoff
+          height: heightWithPadding
         }, '*');
+
+        // Send height again after a brief delay to ensure all content is rendered
+        setTimeout(() => {
+          window.parent.postMessage({
+            type: 'resize',
+            height: heightWithPadding
+          }, '*');
+        }, 500);
       }
     }
 
-    // Send height after content updates
+    // Send height after content updates with a delay to ensure rendering
     if (data) {
-      setTimeout(sendHeight, 50);
+      setTimeout(sendHeight, 100);
+      // Send height again after a longer delay to catch any late updates
+      setTimeout(sendHeight, 1000);
     }
   }, [data]);
 
