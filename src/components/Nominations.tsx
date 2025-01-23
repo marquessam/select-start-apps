@@ -65,16 +65,16 @@ const Nominations = () => {
   }, {} as Record<string, Nomination[]>);
 
   return (
-    <div className="w-full max-w-4xl bg-slate-900 text-gray-100 border border-slate-700 rounded-lg shadow-lg">
-      <div className="px-6 py-4 border-b border-slate-700">
+    <div>
+      <div className="px-6 py-4">
         <h2 className="text-2xl font-bold text-center">
           🎮 Game Nominations
         </h2>
       </div>
       
-      <div className="p-6">
+      <div className="px-6">
         {Object.entries(groupedNominations).length === 0 ? (
-          <div className="text-center py-4 text-gray-400">
+          <div className="text-center py-4">
             No nominations for the current period
           </div>
         ) : (
@@ -82,13 +82,13 @@ const Nominations = () => {
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([platform, nominations]) => (
               <div key={platform} className="nomination-section">
-                <h3 className="text-xl font-semibold mb-4 text-slate-100">
+                <h3 className="text-xl font-bold mb-4">
                   {platformFullNames[platform] || platform}
                 </h3>
                 <div>
                   {nominations.map((nom, index) => (
                     <div key={`${nom.game}-${index}`} className="nomination-entry">
-                      <span className="font-medium">{nom.game}</span>
+                      <span className="font-bold">{nom.game}</span>
                       <span className="nominated-by">
                         nominated by {nom.discordUsername}
                       </span>
