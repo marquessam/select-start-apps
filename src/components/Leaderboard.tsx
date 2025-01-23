@@ -30,15 +30,6 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Single resize handler function
-  const sendHeight = () => {
-    const height = document.documentElement.scrollHeight;
-    window.parent.postMessage({
-      type: 'resize',
-      height
-    }, '*');
-  };
-
   const fetchData = async () => {
     try {
       const [monthlyResponse, yearlyResponse] = await Promise.all([
@@ -61,25 +52,28 @@ const Leaderboard = () => {
     }
   };
 
-  // Data fetching effect
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, []);
 
-  // Resize effect
   useEffect(() => {
-    // Initial resize with delay to ensure content is rendered
-    const timeoutId = setTimeout(sendHeight, 100);
-
-    // Window resize listener
-    window.addEventListener('resize', sendHeight);
-
-    return () => {
-      window.removeEventListener('resize', sendHeight);
-      clearTimeout(timeoutId);
+    const sendHeight = () => {
+      const height = document.documentElement.scrollHeight;
+      window.parent.postMessage({
+        type: 'resize',
+        height: height
+      }, '*');
     };
+
+    // Send height after content changes
+    if (monthlyData || yearlyData) {
+      setTimeout(sendHeight, 100);
+    }
+
+    // Send height on tab change
+    sendHeight();
   }, [monthlyData, yearlyData, activeTab]);
 
   if (loading) return <div>Loading...</div>;
@@ -89,7 +83,7 @@ const Leaderboard = () => {
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
 
   return (
-    <div className="bg-[#17254A] min-h-screen">
+    <div>
       <div className="tab-container">
         <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
              onClick={() => setActiveTab('monthly')}>
