@@ -120,70 +120,75 @@ const Nominations = () => {
   });
 
   return (
-    <div id="nominations-content" style={{ backgroundColor: '#17254A', color: 'white' }}>
-      <div style={{ 
-        padding: '12px 16px',
-        borderBottom: '1px solid #2a3a6a',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-      }}>
-        <span role="img" aria-label="game controller" style={{ fontSize: '1.5rem' }}>🎮</span>
-        <h2 style={{ 
-          fontSize: '1.5rem',
-          fontWeight: 'bold',
-          margin: 0
-        }}>Game Nominations</h2>
-      </div>
+    <div id="nominations-content" style={{ backgroundColor: '#17254A' }}>
+      <div className="mx-auto" style={{ maxWidth: '1200px' }}>
+        <div style={{ 
+          padding: '12px 16px', 
+          borderBottom: '1px solid #2a3a6a',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span role="img" aria-label="game controller" style={{ fontSize: '1.5rem' }}>🎮</span>
+          <h2 style={{ 
+            fontSize: '1.5rem',
+            fontWeight: 'bold',
+            color: 'white',
+            margin: 0
+          }}>Game Nominations</h2>
+        </div>
 
-      <div>
-        {platformOrder
-          .filter(platform => groupedNominations[platform])
-          .map((platform) => (
-            <div key={platform} style={{ marginBottom: '2px' }}>
-              <div style={{ 
-                backgroundColor: '#2a3a6a',
-                padding: '12px 16px'
-              }}>
-                <h3 style={{
-                  fontSize: '1.125rem',
-                  fontWeight: 'bold',
-                  margin: 0
-                }}>{platformFullNames[platform] || platform}</h3>
-              </div>
-              {groupedNominations[platform].map((nom, index) => (
-                <div 
-                  key={`${nom.game}-${index}`}
-                  style={{
-                    padding: '10px 16px',
-                    backgroundColor: '#1f2b4d',
-                    display: 'flex',
-                    flexDirection: window.innerWidth < 768 ? 'column' : 'row',
-                    justifyContent: 'space-between',
-                    alignItems: window.innerWidth < 768 ? 'flex-start' : 'center'
-                  }}
-                >
-                  <span style={{ fontWeight: '500' }}>{nom.game}</span>
-                  <span style={{ 
-                    color: '#32CD32',
-                    fontSize: '0.875rem',
-                    marginTop: window.innerWidth < 768 ? '4px' : '0'
-                  }}>nominated by {nom.discordUsername}</span>
+        <div style={{ padding: '16px' }}>
+          {platformOrder
+            .filter(platform => groupedNominations[platform])
+            .map((platform) => (
+              <div key={platform} style={{ marginBottom: '16px' }}>
+                <div style={{ 
+                  backgroundColor: '#2a3a6a',
+                  padding: '12px 16px',
+                  marginBottom: '1px'
+                }}>
+                  <h3 style={{
+                    fontSize: '1.125rem',
+                    fontWeight: 'bold',
+                    color: 'white',
+                    margin: 0
+                  }}>{platformFullNames[platform] || platform}</h3>
                 </div>
-              ))}
-            </div>
-          ))}
-      </div>
+                {groupedNominations[platform].map((nom, index) => (
+                  <div 
+                    key={`${nom.game}-${index}`}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: '#1f2b4d',
+                      color: 'white',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '8px'
+                    }}
+                  >
+                    <span style={{ fontWeight: '500' }}>{nom.game}</span>
+                    <span style={{ 
+                      color: '#32CD32',
+                      fontSize: '0.875rem'
+                    }}>nominated by {nom.discordUsername}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+        </div>
 
-      <div style={{
-        textAlign: 'center',
-        fontSize: '0.875rem',
-        color: '#8892b0',
-        padding: '16px',
-        borderTop: '1px solid #2a3a6a',
-        marginTop: '16px'
-      }}>
-        Last updated: {new Date(data.lastUpdated).toLocaleString()}
+        <div style={{
+          textAlign: 'center',
+          fontSize: '0.875rem',
+          color: '#8892b0',
+          padding: '16px',
+          borderTop: '1px solid #2a3a6a',
+          marginTop: '16px'
+        }}>
+          Last updated: {new Date(data.lastUpdated).toLocaleString()}
+        </div>
       </div>
     </div>
   );
