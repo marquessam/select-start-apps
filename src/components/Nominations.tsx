@@ -71,6 +71,25 @@ const Nominations = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Add resize functionality
+  useEffect(() => {
+    const sendHeight = () => {
+      if (typeof window !== 'undefined') {
+        window.parent.postMessage({
+          type: 'resize',
+          height: document.documentElement.scrollHeight
+        }, '*');
+      }
+    };
+
+    // Send height when content changes
+    sendHeight();
+
+    // Send height when window resizes
+    window.addEventListener('resize', sendHeight);
+    return () => window.removeEventListener('resize', sendHeight);
+  }, [data]); // Re-run when data changes
+
   if (loading) return <div className="text-center py-4">Loading...</div>;
   if (error) return <div className="text-center py-4 text-red-500">Error: {error}</div>;
   if (!data) return null;
