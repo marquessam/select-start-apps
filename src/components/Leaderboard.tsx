@@ -58,20 +58,23 @@ const Leaderboard = () => {
     return () => clearInterval(interval);
   }, []);
 
- useEffect(() => {
-  function updateHeight() {
-    const height = document.body.offsetHeight;
-    window.parent.postMessage({
-      type: 'resize',
-      height: height
-    }, '*');
-  }
+  useEffect(() => {
+    const sendHeight = () => {
+      const height = document.documentElement.scrollHeight;
+      window.parent.postMessage({
+        type: 'resize',
+        height: height
+      }, '*');
+    };
 
-  // Update height when content changes
-  updateHeight();
-}, [data]); // For Nominations
-// OR
-}, [monthlyData, yearlyData, activeTab]); // For Leaderboard
+    // Send height after content changes
+    if (monthlyData || yearlyData) {
+      setTimeout(sendHeight, 100);
+    }
+
+    // Send height on tab change
+    sendHeight();
+  }, [monthlyData, yearlyData, activeTab]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
