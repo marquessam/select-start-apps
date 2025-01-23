@@ -58,24 +58,6 @@ const Leaderboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const sendHeight = () => {
-      const height = document.documentElement.scrollHeight;
-      window.parent.postMessage({
-        type: 'resize',
-        height: height
-      }, '*');
-    };
-
-    // Send height after content changes
-    if (monthlyData || yearlyData) {
-      setTimeout(sendHeight, 100);
-    }
-
-    // Send height on tab change
-    sendHeight();
-  }, [monthlyData, yearlyData, activeTab]);
-
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!monthlyData || !yearlyData) return null;
