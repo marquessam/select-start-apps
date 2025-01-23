@@ -99,13 +99,14 @@ body {
   background-color: #2a3a6a;
   padding: 12px;
   border-radius: 4px;
+  overflow: visible; /* Ensure no scrolling */
 }
 
 .nomination-entries {
   background-color: #17254A;
   border-radius: 4px;
+  overflow: visible; /* Ensure no scrolling */
 }
-
 .nomination-entry {
   border-bottom: 1px solid #2a3a6a;
 }
