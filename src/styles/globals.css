@@ -9,13 +9,13 @@ body {
     Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
+/* Existing styles */
 .tab-container {
   display: flex;
   gap: 0;
   margin-bottom: 20px;
   width: 100%;
 }
-
 .tab {
   padding: 8px 16px;
   cursor: pointer;
@@ -23,50 +23,41 @@ body {
   text-align: center;
   background-color: #2a3a6a;
 }
-
 .tab.active {
   background-color: #5c3391;
 }
-
 .game-header {
   display: flex;
   align-items: center;
   gap: 20px;
   margin-bottom: 20px;
 }
-
 .game-header img {
   width: 100px;
   height: 100px;
 }
-
 .game-title {
   font-size: 24px;
   font-weight: bold;
 }
-
 .challenge-info {
   background-color: #2a3a6a;
   padding: 20px;
   border-radius: 4px;
   margin-bottom: 20px;
 }
-
 .challenge-section {
   margin-bottom: 15px;
 }
-
 .challenge-section h3 {
   font-weight: bold;
   margin-bottom: 10px;
 }
-
 .challenge-list {
   background-color: #17254A;
   padding: 15px;
   border-radius: 4px;
 }
-
 .leaderboard-entry {
   display: flex;
   align-items: center;
@@ -76,30 +67,54 @@ body {
   border-radius: 4px;
   margin-bottom: 8px;
 }
-
 .rank {
   font-weight: bold;
   font-size: 1.2em;
   min-width: 40px;
 }
-
 .medal-gold { color: #FFD700; }
 .medal-silver { color: #C0C0C0; }
 .medal-bronze { color: #CD7F32; }
-
 .profile-image {
   width: 48px;
   height: 48px;
   border-radius: 50%;
   border: 2px solid #5c3391;
 }
-
 .username {
   color: white;
   text-decoration: none;
   font-weight: bold;
 }
-
 .username:hover {
   color: #5c3391;
+}
+
+/* New Nomination Styles */
+.nomination-section {
+  background-color: #2a3a6a;
+  padding: 20px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.nomination-entry {
+  background-color: #17254A;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.nominated-by {
+  color: #32CD32;
+  margin-left: 8px;
+}
+
+.last-updated {
+  color: #8892b0;
+  text-align: center;
+  font-size: 0.875rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #2a3a6a;
 }
