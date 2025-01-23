@@ -53,14 +53,15 @@ const Nominations = () => {
 
   // Single resize handler function
   const sendHeight = () => {
-    const height = document.documentElement.scrollHeight;
-    window.parent.postMessage({
-      type: 'resize',
-      height
-    }, '*');
+    if (typeof window !== 'undefined') {
+      const height = document.body.scrollHeight;
+      window.parent.postMessage({
+        type: 'resize',
+        height: height
+      }, '*');
+    }
   };
 
-  // Data fetching effect
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -89,9 +90,13 @@ const Nominations = () => {
     // Window resize listener
     window.addEventListener('resize', sendHeight);
 
+    // Send height again after a delay to ensure all content is rendered
+    const secondTimeoutId = setTimeout(sendHeight, 500);
+
     return () => {
       window.removeEventListener('resize', sendHeight);
       clearTimeout(timeoutId);
+      clearTimeout(secondTimeoutId);
     };
   }, [data]);
 
@@ -105,38 +110,43 @@ const Nominations = () => {
     return acc;
   }, {} as Record<string, Nomination[]>);
 
+  // Sort games alphabetically within each platform
+  Object.values(groupedNominations).forEach(nominations => {
+    nominations.sort((a, b) => a.game.localeCompare(b.game));
+  });
+
   return (
-    <div className="bg-[#17254A] min-h-screen">
-      <div className="px-4 py-3">
+    <div className="w-full bg-[#17254A]">
+      <div className="px-4 py-3 border-b border-[#2a3a6a]">
         <h2 className="text-xl font-bold text-center flex items-center justify-center gap-2">
           <span>🎮</span>
           <span>Game Nominations</span>
         </h2>
       </div>
       
-      <div className="px-4">
+      <div className="p-4">
         {Object.entries(groupedNominations).length === 0 ? (
           <div className="text-center py-4">
             No nominations for the current period
           </div>
         ) : (
-          <>
+          <div className="space-y-4">
             {platformOrder
               .filter(platform => groupedNominations[platform])
               .map((platform) => (
-                <div key={platform} className="nomination-section mb-4">
-                  <h3 className="text-lg font-bold px-4 py-2 bg-[#2a3a6a] rounded-t-md">
+                <div key={platform} className="bg-[#2a3a6a] rounded-md overflow-hidden">
+                  <h3 className="text-lg font-bold px-4 py-2 bg-[#1f2b4d]">
                     {platformFullNames[platform] || platform}
                   </h3>
-                  <div className="nomination-entries">
+                  <div>
                     {groupedNominations[platform].map((nom, index) => (
                       <div 
                         key={`${nom.game}-${index}`} 
-                        className="nomination-entry px-4 py-2 bg-[#1c2d57] even:bg-[#1f325f]"
+                        className="px-4 py-2 border-t border-[#1f2b4d] first:border-none"
                       >
                         <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
                           <span className="font-medium">{nom.game}</span>
-                          <span className="nominated-by text-sm">
+                          <span className="text-[#32CD32] text-sm">
                             nominated by {nom.discordUsername}
                           </span>
                         </div>
@@ -146,7 +156,7 @@ const Nominations = () => {
                 </div>
               ))
             }
-          </>
+          </div>
         )}
 
         <div className="text-sm text-center text-slate-400 py-4 mt-4 border-t border-[#2a3a6a]">
