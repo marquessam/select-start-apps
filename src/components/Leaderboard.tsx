@@ -30,12 +30,6 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 300000);
-    return () => clearInterval(interval);
-  }, []);
-
   const fetchData = async () => {
     try {
       const [monthlyResponse, yearlyResponse] = await Promise.all([
@@ -57,6 +51,37 @@ const Leaderboard = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 300000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Add resize functionality
+  useEffect(() => {
+    const sendHeight = () => {
+      if (typeof window !== 'undefined') {
+        window.parent.postMessage({
+          type: 'resize',
+          height: document.documentElement.scrollHeight
+        }, '*');
+      }
+    };
+
+    // Send height when content changes
+    sendHeight();
+
+    // Send height when window resizes
+    window.addEventListener('resize', sendHeight);
+    
+    // Send height when data or tab changes
+    if (monthlyData || yearlyData) {
+      sendHeight();
+    }
+
+    return () => window.removeEventListener('resize', sendHeight);
+  }, [monthlyData, yearlyData, activeTab]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
