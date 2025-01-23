@@ -31,14 +31,19 @@ const Leaderboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    function updateHeight() {
-      const height = document.body.offsetHeight;
-      window.parent.postMessage({
-        type: 'resize',
-        height: height
-      }, '*');
+    function sendHeight() {
+      const content = document.getElementById('leaderboard-content');
+      if (content) {
+        const height = content.clientHeight;
+        window.parent.postMessage({
+          type: 'resize',
+          height
+        }, '*');
+      }
     }
-    updateHeight();
+
+    // Send height after a brief delay to ensure rendering is complete
+    setTimeout(sendHeight, 0);
   }, [monthlyData, yearlyData, activeTab]);
 
   const fetchData = async () => {
@@ -76,7 +81,7 @@ const Leaderboard = () => {
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
 
   return (
-    <div>
+    <div id="leaderboard-content" className="bg-[#17254A]">
       <div className="tab-container">
         <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
              onClick={() => setActiveTab('monthly')}>
