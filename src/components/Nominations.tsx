@@ -13,6 +13,22 @@ interface NominationsData {
   lastUpdated: string;
 }
 
+const platformFullNames: { [key: string]: string } = {
+  'NES': 'Nintendo Entertainment System',
+  'SNES': 'Super Nintendo',
+  'GB': 'Nintendo Game Boy',
+  'GBC': 'Nintendo Game Boy Color',
+  'GBA': 'Nintendo Game Boy Advance',
+  'N64': 'Nintendo 64',
+  'GENESIS': 'Sega Genesis',
+  'MASTER SYSTEM': 'Sega Master System',
+  'GAME GEAR': 'Sega Game Gear',
+  'PSX': 'Sony PlayStation',
+  'SATURN': 'Sega Saturn',
+  'NEO GEO': 'SNK Neo Geo',
+  'TURBOGRAFX-16': 'TurboGrafx-16'
+};
+
 // Define platform order by generation
 const platformOrder = [
   'NES',
@@ -29,22 +45,6 @@ const platformOrder = [
   'NEO GEO',
   'TURBOGRAFX-16'
 ];
-
-const platformFullNames: { [key: string]: string } = {
-  'NES': 'Nintendo Entertainment System',
-  'SNES': 'Super Nintendo',
-  'GB': 'Nintendo Game Boy',
-  'GBC': 'Nintendo Game Boy Color',
-  'GBA': 'Nintendo Game Boy Advance',
-  'N64': 'Nintendo 64',
-  'GENESIS': 'Sega Genesis',
-  'MASTER SYSTEM': 'Sega Master System',
-  'GAME GEAR': 'Sega Game Gear',
-  'PSX': 'Sony PlayStation',
-  'SATURN': 'Sega Saturn',
-  'NEO GEO': 'SNK Neo Geo',
-  'TURBOGRAFX-16': 'TurboGrafx-16'
-};
 
 const Nominations = () => {
   const [data, setData] = useState<NominationsData | null>(null);
@@ -70,6 +70,21 @@ const Nominations = () => {
     const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const sendHeight = () => {
+      const height = document.documentElement.scrollHeight;
+      window.parent.postMessage({
+        type: 'resize',
+        height: height
+      }, '*');
+    };
+
+    // Send height after content changes
+    if (data) {
+      setTimeout(sendHeight, 100);
+    }
+  }, [data]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -119,4 +134,4 @@ const Nominations = () => {
   );
 };
 
-export default Nominations;
+export default Nominati
