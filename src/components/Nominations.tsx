@@ -107,7 +107,7 @@ const Nominations = () => {
   });
 
   return (
-    <div>
+    <div className="w-full max-w-[1200px] mx-auto">
       <div className="px-4 py-3">
         <h2 className="text-xl font-bold text-center">
           🎮 Game Nominations
@@ -120,7 +120,7 @@ const Nominations = () => {
             No nominations for the current period
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {platformOrder
               .filter(platform => groupedNominations[platform])
               .map((platform) => (
@@ -131,7 +131,7 @@ const Nominations = () => {
                   <div className="nomination-entries text-sm">
                     {groupedNominations[platform].map((nom, index) => (
                       <div key={`${nom.game}-${index}`} className="nomination-entry py-1.5 px-3">
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-1.5">
                           <span className="font-medium">{nom.game}</span>
                           <span className="nominated-by text-sm">
                             (by {nom.discordUsername})
