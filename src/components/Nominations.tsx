@@ -13,6 +13,21 @@ interface NominationsData {
   lastUpdated: string;
 }
 
+const platformFullNames: { [key: string]: string } = {
+  'NES': 'Nintendo Entertainment System',
+  'GB': 'Nintendo Game Boy',
+  'GBC': 'Nintendo Game Boy Color',
+  'GBA': 'Nintendo Game Boy Advance',
+  'N64': 'Nintendo 64',
+  'GENESIS': 'Sega Genesis',
+  'MASTER SYSTEM': 'Sega Master System',
+  'GAME GEAR': 'Sega Game Gear',
+  'PSX': 'Sony PlayStation',
+  'SATURN': 'Sega Saturn',
+  'NEO GEO': 'SNK Neo Geo',
+  'TURBOGRAFX-16': 'TurboGrafx-16'
+};
+
 const Nominations = () => {
   const [data, setData] = useState<NominationsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,27 +64,14 @@ const Nominations = () => {
   }, {} as Record<string, Nomination[]>);
 
   return (
-    <div className="w-full max-w-4xl bg-gray-900 text-gray-100 border border-gray-700 rounded-lg shadow-lg">
-      <div className="px-6 py-4 border-b border-gray-700">
-        <h2 className="text-xl font-bold text-center">
-          Game Nominations
+    <div className="w-full max-w-4xl bg-slate-900 text-gray-100 border border-slate-700 rounded-lg shadow-lg">
+      <div className="px-6 py-4 border-b border-slate-700">
+        <h2 className="text-2xl font-bold text-center">
+          🎮 Game Nominations
         </h2>
       </div>
       
-      <div className="p-6">
-        <div className="mb-4 px-4 py-2 bg-gray-800 rounded-md">
-          <div className="flex justify-between items-center">
-            <span>Status:</span>
-            <span className={`px-2 py-1 rounded ${
-              data.isOpen 
-                ? 'bg-green-600 text-white' 
-                : 'bg-red-600 text-white'
-            }`}>
-              {data.isOpen ? 'OPEN' : 'CLOSED'}
-            </span>
-          </div>
-        </div>
-
+      <div className="p-6 space-y-8">
         {Object.entries(groupedNominations).length === 0 ? (
           <div className="text-center py-4 text-gray-400">
             No nominations for the current period
@@ -78,19 +80,19 @@ const Nominations = () => {
           Object.entries(groupedNominations)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([platform, nominations]) => (
-              <div key={platform} className="mb-6">
-                <h3 className="text-lg font-semibold mb-2 px-2 py-1 bg-gray-800">
-                  {platform}
+              <div key={platform} className="bg-slate-800/50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-4 px-3 py-2 bg-slate-800 rounded-md text-slate-100">
+                  {platformFullNames[platform] || platform}
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {nominations.map((nom, index) => (
                     <div 
                       key={`${nom.game}-${index}`}
-                      className="flex items-center px-4 py-2 bg-gray-800/50 rounded-md hover:bg-gray-800 transition-colors"
+                      className="px-4 py-2 bg-slate-800/30 rounded-md hover:bg-slate-800 transition-colors"
                     >
-                      <div className="flex-grow">
-                        <span className="font-medium">{nom.game}</span>
-                        <span className="text-gray-400 text-sm ml-2">
+                      <div>
+                        <span className="font-medium">{nom.game}</span>{' '}
+                        <span className="text-emerald-400">
                           nominated by {nom.discordUsername}
                         </span>
                       </div>
@@ -101,7 +103,7 @@ const Nominations = () => {
             ))
         )}
 
-        <div className="mt-6 text-gray-400 text-sm text-center">
+        <div className="mt-6 text-slate-400 text-sm text-center">
           Last updated: {new Date(data.lastUpdated).toLocaleString()}
         </div>
       </div>
