@@ -72,7 +72,7 @@ const Nominations = () => {
         </h2>
       </div>
       
-      <div className="p-6 space-y-8">
+      <div className="p-6">
         {Object.entries(groupedNominations).length === 0 ? (
           <div className="text-center py-4 text-gray-400">
             No nominations for the current period
@@ -81,22 +81,17 @@ const Nominations = () => {
           Object.entries(groupedNominations)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([platform, nominations]) => (
-              <div key={platform} className="rounded-lg bg-slate-800/80 p-6">
+              <div key={platform} className="nomination-section">
                 <h3 className="text-xl font-semibold mb-4 text-slate-100">
                   {platformFullNames[platform] || platform}
                 </h3>
-                <div className="space-y-3">
+                <div>
                   {nominations.map((nom, index) => (
-                    <div 
-                      key={`${nom.game}-${index}`}
-                      className="px-4 py-3 bg-slate-900/90 rounded-md"
-                    >
-                      <div>
-                        <span className="font-medium">{nom.game}</span>{' '}
-                        <span className="text-[#32CD32]">
-                          nominated by {nom.discordUsername}
-                        </span>
-                      </div>
+                    <div key={`${nom.game}-${index}`} className="nomination-entry">
+                      <span className="font-medium">{nom.game}</span>
+                      <span className="nominated-by">
+                        nominated by {nom.discordUsername}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -104,7 +99,7 @@ const Nominations = () => {
             ))
         )}
 
-        <div className="mt-6 text-slate-400 text-sm text-center">
+        <div className="last-updated">
           Last updated: {new Date(data.lastUpdated).toLocaleString()}
         </div>
       </div>
