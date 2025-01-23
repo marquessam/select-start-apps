@@ -30,6 +30,17 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    function updateHeight() {
+      const height = document.body.offsetHeight;
+      window.parent.postMessage({
+        type: 'resize',
+        height: height
+      }, '*');
+    }
+    updateHeight();
+  }, [monthlyData, yearlyData, activeTab]);
+
   const fetchData = async () => {
     try {
       const [monthlyResponse, yearlyResponse] = await Promise.all([
@@ -57,24 +68,6 @@ const Leaderboard = () => {
     const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    const sendHeight = () => {
-      const height = document.documentElement.scrollHeight;
-      window.parent.postMessage({
-        type: 'resize',
-        height: height
-      }, '*');
-    };
-
-    // Send height after content changes
-    if (monthlyData || yearlyData) {
-      setTimeout(sendHeight, 100);
-    }
-
-    // Send height on tab change
-    sendHeight();
-  }, [monthlyData, yearlyData, activeTab]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
