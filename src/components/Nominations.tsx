@@ -29,7 +29,6 @@ const platformFullNames: { [key: string]: string } = {
   'TURBOGRAFX-16': 'TurboGrafx-16'
 };
 
-// Define platform order by generation
 const platformOrder = [
   'NES',
   'SNES',
@@ -51,6 +50,17 @@ const Nominations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    function updateHeight() {
+      const height = document.body.offsetHeight;
+      window.parent.postMessage({
+        type: 'resize',
+        height: height
+      }, '*');
+    }
+    updateHeight();
+  }, [data]);
+
   const fetchData = async () => {
     try {
       const response = await fetch('/api/nominations');
@@ -70,21 +80,6 @@ const Nominations = () => {
     const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, []);
-
- useEffect(() => {
-  function updateHeight() {
-    const height = document.body.offsetHeight;
-    window.parent.postMessage({
-      type: 'resize',
-      height: height
-    }, '*');
-  }
-
-  // Update height when content changes
-  updateHeight();
-}, [data]); // For Nominations
-// OR
-}, [monthlyData, yearlyData, activeTab]); // For Leaderboard
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
