@@ -51,66 +51,66 @@ const Nominations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    try {
-      const response = await fetch('/api/nominations');
-      if (!response.ok) throw new Error('Failed to fetch nominations');
-      const newData = await response.json();
-      setData(newData);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
+  // Single resize handler function
+  const sendHeight = () => {
+    const height = document.documentElement.scrollHeight;
+    window.parent.postMessage({
+      type: 'resize',
+      height
+    }, '*');
   };
 
+  // Data fetching effect
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/nominations');
+        if (!response.ok) throw new Error('Failed to fetch nominations');
+        const newData = await response.json();
+        setData(newData);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchData();
     const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, []);
 
-  // Add resize functionality
+  // Resize effect
   useEffect(() => {
-    const sendHeight = () => {
-      if (typeof window !== 'undefined') {
-        window.parent.postMessage({
-          type: 'resize',
-          height: document.documentElement.scrollHeight
-        }, '*');
-      }
-    };
+    // Initial resize
+    const timeoutId = setTimeout(sendHeight, 100);
 
-    // Send height when content changes
-    sendHeight();
-
-    // Send height when window resizes
+    // Window resize listener
     window.addEventListener('resize', sendHeight);
-    return () => window.removeEventListener('resize', sendHeight);
-  }, [data]); // Re-run when data changes
+
+    return () => {
+      window.removeEventListener('resize', sendHeight);
+      clearTimeout(timeoutId);
+    };
+  }, [data]);
 
   if (loading) return <div className="text-center py-4">Loading...</div>;
   if (error) return <div className="text-center py-4 text-red-500">Error: {error}</div>;
   if (!data) return null;
 
-  // Group nominations by platform
   const groupedNominations = data.nominations.reduce((acc, nom) => {
     if (!acc[nom.platform]) acc[nom.platform] = [];
     acc[nom.platform].push(nom);
     return acc;
   }, {} as Record<string, Nomination[]>);
 
-  // Sort games alphabetically within each platform
-  Object.values(groupedNominations).forEach(nominations => {
-    nominations.sort((a, b) => a.game.localeCompare(b.game));
-  });
-
   return (
-    <div className="w-full max-w-[1200px] mx-auto">
+    <div className="bg-[#17254A] min-h-screen">
       <div className="px-4 py-3">
-        <h2 className="text-xl font-bold text-center">
-          🎮 Game Nominations
+        <h2 className="text-xl font-bold text-center flex items-center justify-center gap-2">
+          <span>🎮</span>
+          <span>Game Nominations</span>
         </h2>
       </div>
       
@@ -120,21 +120,24 @@ const Nominations = () => {
             No nominations for the current period
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <>
             {platformOrder
               .filter(platform => groupedNominations[platform])
               .map((platform) => (
-                <div key={platform} className="nomination-section">
-                  <h3 className="text-base font-bold mb-2">
+                <div key={platform} className="nomination-section mb-4">
+                  <h3 className="text-lg font-bold px-4 py-2 bg-[#2a3a6a] rounded-t-md">
                     {platformFullNames[platform] || platform}
                   </h3>
-                  <div className="nomination-entries text-sm">
+                  <div className="nomination-entries">
                     {groupedNominations[platform].map((nom, index) => (
-                      <div key={`${nom.game}-${index}`} className="nomination-entry py-1.5 px-3">
-                        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-1.5">
+                      <div 
+                        key={`${nom.game}-${index}`} 
+                        className="nomination-entry px-4 py-2 bg-[#1c2d57] even:bg-[#1f325f]"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
                           <span className="font-medium">{nom.game}</span>
                           <span className="nominated-by text-sm">
-                            (by {nom.discordUsername})
+                            nominated by {nom.discordUsername}
                           </span>
                         </div>
                       </div>
@@ -143,10 +146,10 @@ const Nominations = () => {
                 </div>
               ))
             }
-          </div>
+          </>
         )}
 
-        <div className="last-updated">
+        <div className="text-sm text-center text-slate-400 py-4 mt-4 border-t border-[#2a3a6a]">
           Last updated: {new Date(data.lastUpdated).toLocaleString()}
         </div>
       </div>
