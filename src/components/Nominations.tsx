@@ -13,6 +13,23 @@ interface NominationsData {
   lastUpdated: string;
 }
 
+// Define platform order by generation
+const platformOrder = [
+  'NES',
+  'SNES',
+  'GENESIS',
+  'N64',
+  'PSX',
+  'GB',
+  'GBC',
+  'GBA',
+  'SATURN',
+  'MASTER SYSTEM',
+  'GAME GEAR',
+  'NEO GEO',
+  'TURBOGRAFX-16'
+];
+
 const platformFullNames: { [key: string]: string } = {
   'NES': 'Nintendo Entertainment System',
   'SNES': 'Super Nintendo',
@@ -58,11 +75,17 @@ const Nominations = () => {
   if (error) return <div className="text-center py-4 text-red-500">Error: {error}</div>;
   if (!data) return null;
 
+  // Group nominations by platform
   const groupedNominations = data.nominations.reduce((acc, nom) => {
     if (!acc[nom.platform]) acc[nom.platform] = [];
     acc[nom.platform].push(nom);
     return acc;
   }, {} as Record<string, Nomination[]>);
+
+  // Sort games alphabetically within each platform
+  Object.values(groupedNominations).forEach(nominations => {
+    nominations.sort((a, b) => a.game.localeCompare(b.game));
+  });
 
   return (
     <div>
@@ -78,15 +101,15 @@ const Nominations = () => {
             No nominations for the current period
           </div>
         ) : (
-          Object.entries(groupedNominations)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([platform, nominations]) => (
+          platformOrder
+            .filter(platform => groupedNominations[platform])
+            .map((platform) => (
               <div key={platform} className="nomination-section">
                 <h3 className="text-xl font-bold mb-4">
                   {platformFullNames[platform] || platform}
                 </h3>
-                <div>
-                  {nominations.map((nom, index) => (
+                <div className="nomination-entries">
+                  {groupedNominations[platform].map((nom, index) => (
                     <div key={`${nom.game}-${index}`} className="nomination-entry">
                       <span className="font-bold">{nom.game}</span>
                       <span className="nominated-by">
