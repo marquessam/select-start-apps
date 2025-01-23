@@ -82,8 +82,8 @@ const Leaderboard = () => {
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
 
   return (
-    <div id="leaderboard-content" className="bg-[#17254A]" style={{ minHeight: 'min-content' }}>
-      <div className="tab-container" style={{ margin: 0 }}>
+    <div id="leaderboard-content" className="bg-[#17254A]">
+      <div className="tab-container">
         <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
              onClick={() => setActiveTab('monthly')}>
           Monthly Challenge
@@ -116,67 +116,37 @@ const Leaderboard = () => {
         </>
       )}
 
-      <div style={{ padding: '0 12px' }}>
+      <div className="p-2 md:p-4">
         {currentData.leaderboard.map((entry, index) => (
-          <div key={entry.username} className="leaderboard-entry" style={{ 
-            marginBottom: index === currentData.leaderboard.length - 1 ? 0 : '8px',
-            padding: '8px',
-            flexWrap: 'wrap'
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px', 
-              minWidth: '80px'
-            }}>
-              <div className={`rank ${
-                index === 0 ? 'medal-gold' : 
-                index === 1 ? 'medal-silver' : 
-                index === 2 ? 'medal-bronze' : ''
-              }`}>
-                #{index + 1}
-              </div>
-              {index < 3 && <div>{index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}</div>}
+          <div key={entry.username} className="leaderboard-entry">
+            <div className={`rank ${
+              index === 0 ? 'medal-gold' : 
+              index === 1 ? 'medal-silver' : 
+              index === 2 ? 'medal-bronze' : ''
+            }`}>
+              #{index + 1}
             </div>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px',
-              flex: 1,
-              minWidth: 0,
-              maxWidth: '100%'
-            }}>
-              <img src={entry.profileImage}
-                   alt={entry.username}
-                   className="profile-image"
-                   style={{ width: '40px', height: '40px' }}
-                   onError={(e) => {
-                     e.currentTarget.src = 'https://retroachievements.org/UserPic/_user.png';
-                   }} />
-              <div style={{ 
-                flex: 1,
-                minWidth: 0,
-                overflow: 'hidden'
-              }}>
-                <a href={entry.profileUrl} 
-                   target="_blank"
-                   rel="noopener noreferrer"
-                   className="username"
-                   style={{ 
-                     display: 'block',
-                     textOverflow: 'ellipsis',
-                     overflow: 'hidden',
-                     whiteSpace: 'nowrap'
-                   }}>
-                  {entry.username}
-                </a>
+            <img src={entry.profileImage}
+                 alt={entry.username}
+                 className="profile-image"
+                 onError={(e) => {
+                   e.currentTarget.src = 'https://retroachievements.org/UserPic/_user.png';
+                 }} />
+            <div className="flex-grow">
+              <a href={entry.profileUrl} 
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 className="username">
+                {entry.username}
+              </a>
+              <div className="flex items-center gap-2">
                 {activeTab === 'monthly' ? (
-                  <div style={{ fontSize: '0.9em' }}>
-                    <div>{entry.completedAchievements}/{entry.totalAchievements}</div>
-                    <div>{entry.completionPercentage}%</div>
-                  </div>
+                  <>
+                    <span>{entry.completedAchievements}/{entry.totalAchievements}</span>
+                    <span>{entry.completionPercentage}%</span>
+                  </>
                 ) : (
-                  <div style={{ fontSize: '0.9em' }}>{entry.points} points</div>
+                  <span>{entry.points} points</span>
                 )}
               </div>
             </div>
@@ -184,14 +154,7 @@ const Leaderboard = () => {
         ))}
       </div>
 
-      <div style={{ 
-        fontSize: '0.875rem',
-        color: '#8892b0',
-        textAlign: 'center',
-        padding: '12px',
-        borderTop: '1px solid #2a3a6a',
-        marginTop: '12px'
-      }}>
+      <div className="text-sm text-center text-gray-400 mt-4 pt-4 border-t border-[#2a3a6a]">
         Last updated: {new Date(currentData.lastUpdated).toLocaleString()}
       </div>
     </div>
