@@ -30,6 +30,15 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Single resize handler function
+  const sendHeight = () => {
+    const height = document.documentElement.scrollHeight;
+    window.parent.postMessage({
+      type: 'resize',
+      height
+    }, '*');
+  };
+
   const fetchData = async () => {
     try {
       const [monthlyResponse, yearlyResponse] = await Promise.all([
@@ -52,35 +61,25 @@ const Leaderboard = () => {
     }
   };
 
+  // Data fetching effect
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, []);
 
-  // Add resize functionality
+  // Resize effect
   useEffect(() => {
-    const sendHeight = () => {
-      if (typeof window !== 'undefined') {
-        window.parent.postMessage({
-          type: 'resize',
-          height: document.documentElement.scrollHeight
-        }, '*');
-      }
-    };
+    // Initial resize with delay to ensure content is rendered
+    const timeoutId = setTimeout(sendHeight, 100);
 
-    // Send height when content changes
-    sendHeight();
-
-    // Send height when window resizes
+    // Window resize listener
     window.addEventListener('resize', sendHeight);
-    
-    // Send height when data or tab changes
-    if (monthlyData || yearlyData) {
-      sendHeight();
-    }
 
-    return () => window.removeEventListener('resize', sendHeight);
+    return () => {
+      window.removeEventListener('resize', sendHeight);
+      clearTimeout(timeoutId);
+    };
   }, [monthlyData, yearlyData, activeTab]);
 
   if (loading) return <div>Loading...</div>;
@@ -90,7 +89,7 @@ const Leaderboard = () => {
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
 
   return (
-    <div>
+    <div className="bg-[#17254A] min-h-screen">
       <div className="tab-container">
         <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
              onClick={() => setActiveTab('monthly')}>
