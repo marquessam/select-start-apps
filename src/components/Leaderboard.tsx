@@ -31,73 +31,54 @@ const Leaderboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   const sendHeight = () => {
-    const content = document.getElementById('leaderboard-container');
-    if (content) {
-      const height = content.getBoundingClientRect().height;
-      window.parent.postMessage({
-        type: 'resize',
-        height: height
-      }, '*');
-    }
-  };
-
-  // Handle initial render and data updates
-  useEffect(() => {
-    if (monthlyData || yearlyData) {
-      // Immediate height calculation
-      sendHeight();
-      // Secondary calculation after a short delay to ensure rendering
-      setTimeout(sendHeight, 100);
-    }
-  }, [monthlyData, yearlyData]);
-
-  // Handle tab changes
-  useEffect(() => {
-    sendHeight();
-  }, [activeTab]);
-
-  // Add resize observer to handle any dynamic content changes
-  useEffect(() => {
-    const container = document.getElementById('leaderboard-container');
-    if (container) {
-      const observer = new ResizeObserver(() => {
-        sendHeight();
-      });
-      observer.observe(container);
-      return () => observer.disconnect();
-    }
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const [monthlyResponse, yearlyResponse] = await Promise.all([
-        fetch('/api/monthly-leaderboard'),
-        fetch('/api/yearly-leaderboard')
-      ]);
-      
-      if (!monthlyResponse.ok || !yearlyResponse.ok) throw new Error('Failed to fetch data');
-      
-      const monthlyData = await monthlyResponse.json();
-      const yearlyData = await yearlyResponse.json();
-      
-      setMonthlyData(monthlyData);
-      setYearlyData(yearlyData);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
+    requestAnimationFrame(() => {
+      const content = document.getElementById('leaderboard-container');
+      if (content) {
+        const height = content.getBoundingClientRect().height;
+        window.parent.postMessage({
+          type: 'resize',
+          height
+        }, '*');
+      }
+    });
   };
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [monthlyResponse, yearlyResponse] = await Promise.all([
+          fetch('/api/monthly-leaderboard'),
+          fetch('/api/yearly-leaderboard')
+        ]);
+        
+        if (!monthlyResponse.ok || !yearlyResponse.ok) throw new Error('Failed to fetch data');
+        
+        const monthlyData = await monthlyResponse.json();
+        const yearlyData = await yearlyResponse.json();
+        
+        setMonthlyData(monthlyData);
+        setYearlyData(yearlyData);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchData();
     const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, []);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  useEffect(() => {
+    if (monthlyData && yearlyData && !loading) {
+      sendHeight();
+    }
+  }, [monthlyData, yearlyData, loading, activeTab]);
+
+  if (loading) return <div style={{ padding: '1rem' }}>Loading...</div>;
+  if (error) return <div style={{ padding: '1rem' }}>Error: {error}</div>;
   if (!monthlyData || !yearlyData) return null;
 
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
@@ -105,9 +86,10 @@ const Leaderboard = () => {
   return (
     <div id="leaderboard-container" style={{ 
       background: '#17254A', 
-      height: 'fit-content',
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      minHeight: 'fit-content',
+      maxHeight: 'fit-content'
     }}>
       <div className="tab-container">
         <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
@@ -142,7 +124,7 @@ const Leaderboard = () => {
         </>
       )}
 
-      <div className="p-2 md:p-4">
+      <div style={{ padding: '8px 16px' }}>
         {currentData.leaderboard.map((entry, index) => (
           <div key={entry.username} className="leaderboard-entry">
             <div className={`rank ${
@@ -180,7 +162,14 @@ const Leaderboard = () => {
         ))}
       </div>
 
-      <div className="text-sm text-center text-gray-400 mt-4 pt-4 border-t border-[#2a3a6a]">
+      <div style={{ 
+        fontSize: '0.875rem',
+        color: '#8892b0',
+        textAlign: 'center',
+        padding: '1rem',
+        borderTop: '1px solid #2a3a6a',
+        marginTop: '1rem'
+      }}>
         Last updated: {new Date(currentData.lastUpdated).toLocaleString()}
       </div>
     </div>
