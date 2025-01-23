@@ -34,16 +34,20 @@ const Leaderboard = () => {
     function sendHeight() {
       const content = document.getElementById('leaderboard-content');
       if (content) {
-        const height = content.clientHeight;
+        // Calculate actual content height
+        const contentHeight = content.scrollHeight;
         window.parent.postMessage({
           type: 'resize',
-          height
+          height: contentHeight + 20 // Small padding to prevent cutting off
         }, '*');
       }
     }
 
-    // Send height after a brief delay to ensure rendering is complete
-    setTimeout(sendHeight, 0);
+    // Send height after data/tab changes
+    if (monthlyData || yearlyData) {
+      // Small delay to ensure content is rendered
+      setTimeout(sendHeight, 100);
+    }
   }, [monthlyData, yearlyData, activeTab]);
 
   const fetchData = async () => {
@@ -81,8 +85,8 @@ const Leaderboard = () => {
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
 
   return (
-    <div id="leaderboard-content" className="bg-[#17254A]">
-      <div className="tab-container">
+    <div id="leaderboard-content" className="bg-[#17254A]" style={{ minHeight: 'min-content' }}>
+      <div className="tab-container" style={{ margin: 0 }}>
         <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
              onClick={() => setActiveTab('monthly')}>
           Monthly Challenge
@@ -104,7 +108,7 @@ const Leaderboard = () => {
             <h2 className="game-title">{monthlyData.gameInfo.Title}</h2>
           </div>
 
-          <div className="challenge-list mt-4">
+          <div className="challenge-list">
             &gt; This challenge runs from January 1st, 2025 to January 31st, 2025.<br />
             &gt; Hardcore mode must be enabled<br />
             &gt; All achievements are eligible<br />
@@ -115,9 +119,9 @@ const Leaderboard = () => {
         </>
       )}
 
-      <div>
+      <div style={{ padding: '0 12px' }}>
         {currentData.leaderboard.map((entry, index) => (
-          <div key={entry.username} className="leaderboard-entry">
+          <div key={entry.username} className="leaderboard-entry" style={{ marginBottom: index === currentData.leaderboard.length - 1 ? 0 : '8px' }}>
             <div className={`rank ${
               index === 0 ? 'medal-gold' : 
               index === 1 ? 'medal-silver' : 
@@ -152,7 +156,14 @@ const Leaderboard = () => {
         ))}
       </div>
 
-      <div className="mt-4 text-gray-400 text-sm text-center">
+      <div style={{ 
+        fontSize: '0.875rem',
+        color: '#8892b0',
+        textAlign: 'center',
+        padding: '12px 0',
+        borderTop: '1px solid #2a3a6a',
+        marginTop: '12px'
+      }}>
         Last updated: {new Date(currentData.lastUpdated).toLocaleString()}
       </div>
     </div>
