@@ -54,16 +54,18 @@ const Nominations = () => {
     function sendHeight() {
       const content = document.getElementById('nominations-content');
       if (content) {
-        const height = content.clientHeight;
+        const height = content.scrollHeight;
         window.parent.postMessage({
           type: 'resize',
-          height
+          height: height + 50 // Add padding to ensure no cutoff
         }, '*');
       }
     }
 
     // Send height after content updates
-    setTimeout(sendHeight, 0);
+    if (data) {
+      setTimeout(sendHeight, 50);
+    }
   }, [data]);
 
   const fetchData = async () => {
@@ -86,8 +88,8 @@ const Nominations = () => {
     return () => clearInterval(interval);
   }, []);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) return <div className="p-4 text-white">Loading...</div>;
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
   if (!data) return null;
 
   const groupedNominations = data.nominations.reduce((acc, nom) => {
@@ -102,40 +104,76 @@ const Nominations = () => {
   });
 
   return (
-    <div id="nominations-content" className="bg-[#17254A] text-white">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#2a3a6a]">
-        <span className="text-xl">🎮</span>
-        <h2 className="text-xl font-bold">Game Nominations</h2>
-      </div>
+    <div id="nominations-content" style={{ backgroundColor: '#17254A' }}>
+      <div className="mx-auto" style={{ maxWidth: '1200px' }}>
+        <div style={{ 
+          padding: '12px 16px', 
+          borderBottom: '1px solid #2a3a6a',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span role="img" aria-label="game controller" style={{ fontSize: '1.5rem' }}>🎮</span>
+          <h2 style={{ 
+            fontSize: '1.5rem',
+            fontWeight: 'bold',
+            color: 'white',
+            margin: 0
+          }}>Game Nominations</h2>
+        </div>
 
-      <div>
-        {platformOrder
-          .filter(platform => groupedNominations[platform])
-          .map((platform) => (
-            <div key={platform} className="mb-4">
-              <div className="bg-[#2a3a6a] px-4 py-2">
-                <h3 className="text-lg font-semibold">{platformFullNames[platform] || platform}</h3>
-              </div>
-              {groupedNominations[platform].map((nom, index) => (
-                <div 
-                  key={`${nom.game}-${index}`}
-                  className="flex flex-col md:flex-row md:justify-between px-4 py-2 bg-[#1f2b4d]"
-                >
-                  <span className="font-medium">{nom.game}</span>
-                  <span className="text-[#32CD32] text-sm md:ml-4">
-                    nominated by {nom.discordUsername}
-                  </span>
+        <div style={{ padding: '16px' }}>
+          {platformOrder
+            .filter(platform => groupedNominations[platform])
+            .map((platform) => (
+              <div key={platform} style={{ marginBottom: '16px' }}>
+                <div style={{ 
+                  backgroundColor: '#2a3a6a',
+                  padding: '12px 16px',
+                  marginBottom: '1px'
+                }}>
+                  <h3 style={{
+                    fontSize: '1.125rem',
+                    fontWeight: 'bold',
+                    color: 'white',
+                    margin: 0
+                  }}>{platformFullNames[platform] || platform}</h3>
                 </div>
-              ))}
-            </div>
-          ))}
-      </div>
+                {groupedNominations[platform].map((nom, index) => (
+                  <div 
+                    key={`${nom.game}-${index}`}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: '#1f2b4d',
+                      color: 'white',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '8px'
+                    }}
+                  >
+                    <span style={{ fontWeight: '500' }}>{nom.game}</span>
+                    <span style={{ 
+                      color: '#32CD32',
+                      fontSize: '0.875rem'
+                    }}>nominated by {nom.discordUsername}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+        </div>
 
-      {data.nominations.length > 0 && (
-        <div className="text-sm text-center text-gray-400 mt-4 pt-4 border-t border-[#2a3a6a]">
+        <div style={{
+          textAlign: 'center',
+          fontSize: '0.875rem',
+          color: '#8892b0',
+          padding: '16px',
+          borderTop: '1px solid #2a3a6a',
+          marginTop: '16px'
+        }}>
           Last updated: {new Date(data.lastUpdated).toLocaleString()}
         </div>
-      )}
+      </div>
     </div>
   );
 };
