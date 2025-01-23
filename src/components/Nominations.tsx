@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 interface Nomination {
   game: string;
@@ -50,13 +49,14 @@ const Nominations = () => {
   }, {} as Record<string, Nomination[]>);
 
   return (
-    <Card className="w-full max-w-4xl bg-gray-900 text-gray-100 border-gray-700">
-      <CardHeader>
-        <CardTitle className="text-xl font-bold text-center">
+    <div className="w-full max-w-4xl bg-gray-900 text-gray-100 border border-gray-700 rounded-lg shadow-lg">
+      <div className="px-6 py-4 border-b border-gray-700">
+        <h2 className="text-xl font-bold text-center">
           Game Nominations
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+        </h2>
+      </div>
+      
+      <div className="p-6">
         <div className="mb-4 px-4 py-2 bg-gray-800 rounded-md">
           <div className="flex justify-between items-center">
             <span>Status:</span>
@@ -104,8 +104,8 @@ const Nominations = () => {
         <div className="mt-6 text-gray-400 text-sm text-center">
           Last updated: {new Date(data.lastUpdated).toLocaleString()}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
