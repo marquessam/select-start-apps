@@ -96,39 +96,46 @@ const Nominations = () => {
     return acc;
   }, {} as Record<string, Nomination[]>);
 
+  // Sort games alphabetically within each platform
+  Object.values(groupedNominations).forEach(nominations => {
+    nominations.sort((a, b) => a.game.localeCompare(b.game));
+  });
+
   return (
-    <div id="nominations-content" className="bg-[#17254A]">
-      <div className="px-4 py-3 border-b border-[#2a3a6a]">
-        <h2 className="text-xl font-bold text-center flex items-center gap-2">
-          <span className="text-2xl">🎮</span>
-          <span>Game Nominations</span>
-        </h2>
+    <div id="nominations-content" className="bg-[#17254A] text-white">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#2a3a6a]">
+        <span className="text-xl">🎮</span>
+        <h2 className="text-xl font-bold">Game Nominations</h2>
       </div>
 
-      <div className="nominations-container">
+      <div>
         {platformOrder
           .filter(platform => groupedNominations[platform])
           .map((platform) => (
-            <div key={platform} className="platform-section">
-              <h3 className="bg-[#1f2b4d] px-4 py-2 text-lg font-semibold">
-                {platformFullNames[platform] || platform}
-              </h3>
-              <div className="nominations-list">
-                {groupedNominations[platform].map((nom, index) => (
-                  <div 
-                    key={`${nom.game}-${index}`} 
-                    className="nomination-entry px-4 py-2 flex justify-between"
-                  >
-                    <span>{nom.game}</span>
-                    <span className="text-[#32CD32] text-sm">
-                      nominated by {nom.discordUsername}
-                    </span>
-                  </div>
-                ))}
+            <div key={platform} className="mb-4">
+              <div className="bg-[#2a3a6a] px-4 py-2">
+                <h3 className="text-lg font-semibold">{platformFullNames[platform] || platform}</h3>
               </div>
+              {groupedNominations[platform].map((nom, index) => (
+                <div 
+                  key={`${nom.game}-${index}`}
+                  className="flex flex-col md:flex-row md:justify-between px-4 py-2 bg-[#1f2b4d]"
+                >
+                  <span className="font-medium">{nom.game}</span>
+                  <span className="text-[#32CD32] text-sm md:ml-4">
+                    nominated by {nom.discordUsername}
+                  </span>
+                </div>
+              ))}
             </div>
           ))}
       </div>
+
+      {data.nominations.length > 0 && (
+        <div className="text-sm text-center text-gray-400 mt-4 pt-4 border-t border-[#2a3a6a]">
+          Last updated: {new Date(data.lastUpdated).toLocaleString()}
+        </div>
+      )}
     </div>
   );
 };
