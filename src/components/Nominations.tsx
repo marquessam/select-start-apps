@@ -134,4 +134,4 @@ const Nominations = () => {
   );
 };
 
-export default Nominati
+export default Nominations;
