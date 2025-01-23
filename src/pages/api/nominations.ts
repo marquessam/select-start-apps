@@ -1,5 +1,23 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getMongoDb } from '@/utils/mongodb';
+import { WithId, Document } from 'mongodb';
+
+interface NominationDoc extends Document {
+  _id: string;
+  nominations?: {
+    [key: string]: Array<{
+      game: string;
+      platform: string;
+      discordUsername: string;
+      discordId: string;
+    }>;
+  };
+}
+
+interface StatusDoc extends Document {
+  _id: string;
+  isOpen: boolean;
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -17,12 +35,12 @@ export default async function handler(
     
     // Fetch nominations document
     const nominationsDoc = await db
-      .collection('nominations')
+      .collection<NominationDoc>('nominations')
       .findOne({ _id: 'nominations' });
     
     // Get nomination status
     const statusDoc = await db
-      .collection('nominations')
+      .collection<StatusDoc>('nominations')
       .findOne({ _id: 'status' });
     
     const currentNominations = nominationsDoc?.nominations?.[period] || [];
