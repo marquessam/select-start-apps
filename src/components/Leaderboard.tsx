@@ -30,23 +30,44 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-   useEffect(() => {
-    function sendHeight() {
-      const content = document.getElementById('leaderboard-container');
-      if (content) {
-        const height = content.getBoundingClientRect().height;
-        window.parent.postMessage({
-          type: 'resize',
-          height: height
-        }, '*');
-      }
+  const sendHeight = () => {
+    const content = document.getElementById('leaderboard-container');
+    if (content) {
+      const height = content.getBoundingClientRect().height;
+      window.parent.postMessage({
+        type: 'resize',
+        height: height
+      }, '*');
     }
+  };
 
+  // Handle initial render and data updates
+  useEffect(() => {
     if (monthlyData || yearlyData) {
+      // Immediate height calculation
+      sendHeight();
+      // Secondary calculation after a short delay to ensure rendering
       setTimeout(sendHeight, 100);
     }
-  }, [monthlyData, yearlyData, activeTab]);
-  
+  }, [monthlyData, yearlyData]);
+
+  // Handle tab changes
+  useEffect(() => {
+    sendHeight();
+  }, [activeTab]);
+
+  // Add resize observer to handle any dynamic content changes
+  useEffect(() => {
+    const container = document.getElementById('leaderboard-container');
+    if (container) {
+      const observer = new ResizeObserver(() => {
+        sendHeight();
+      });
+      observer.observe(container);
+      return () => observer.disconnect();
+    }
+  }, []);
+
   const fetchData = async () => {
     try {
       const [monthlyResponse, yearlyResponse] = await Promise.all([
@@ -75,14 +96,19 @@ const Leaderboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-   if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!monthlyData || !yearlyData) return null;
 
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
 
   return (
-    <div id="leaderboard-container" style={{ background: '#17254A', height: 'fit-content' }}>
+    <div id="leaderboard-container" style={{ 
+      background: '#17254A', 
+      height: 'fit-content',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
       <div className="tab-container">
         <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
              onClick={() => setActiveTab('monthly')}>
