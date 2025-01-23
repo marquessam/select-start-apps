@@ -108,37 +108,42 @@ const Nominations = () => {
 
   return (
     <div>
-      <div className="px-6 py-4">
-        <h2 className="text-2xl font-bold text-center">
+      <div className="px-4 py-3">
+        <h2 className="text-xl font-bold text-center">
           🎮 Game Nominations
         </h2>
       </div>
       
-      <div className="px-6">
+      <div className="px-4">
         {Object.entries(groupedNominations).length === 0 ? (
           <div className="text-center py-4">
             No nominations for the current period
           </div>
         ) : (
-          platformOrder
-            .filter(platform => groupedNominations[platform])
-            .map((platform) => (
-              <div key={platform} className="nomination-section">
-                <h3 className="text-xl font-bold mb-4">
-                  {platformFullNames[platform] || platform}
-                </h3>
-                <div className="nomination-entries">
-                  {groupedNominations[platform].map((nom, index) => (
-                    <div key={`${nom.game}-${index}`} className="nomination-entry">
-                      <span className="font-bold">{nom.game}</span>
-                      <span className="nominated-by">
-                        nominated by {nom.discordUsername}
-                      </span>
-                    </div>
-                  ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {platformOrder
+              .filter(platform => groupedNominations[platform])
+              .map((platform) => (
+                <div key={platform} className="nomination-section">
+                  <h3 className="text-base font-bold mb-2">
+                    {platformFullNames[platform] || platform}
+                  </h3>
+                  <div className="nomination-entries text-sm">
+                    {groupedNominations[platform].map((nom, index) => (
+                      <div key={`${nom.game}-${index}`} className="nomination-entry py-1.5 px-3">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-medium">{nom.game}</span>
+                          <span className="nominated-by text-sm">
+                            (by {nom.discordUsername})
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))
+            }
+          </div>
         )}
 
         <div className="last-updated">
