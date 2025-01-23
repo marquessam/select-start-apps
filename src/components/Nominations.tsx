@@ -120,11 +120,7 @@ const Nominations = () => {
   });
 
   return (
-    <div id="nominations-content" style={{ 
-      backgroundColor: '#17254A',
-      color: 'white',
-      minHeight: '100vh' // Ensure it takes full height
-    }}>
+    <div id="nominations-content" style={{ backgroundColor: '#17254A', color: 'white' }}>
       <div style={{ 
         padding: '12px 16px',
         borderBottom: '1px solid #2a3a6a',
@@ -160,20 +156,19 @@ const Nominations = () => {
                   key={`${nom.game}-${index}`}
                   style={{
                     padding: '10px 16px',
-                    backgroundColor: '#1f2b4d'
+                    backgroundColor: '#1f2b4d',
+                    display: 'flex',
+                    flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+                    justifyContent: 'space-between',
+                    alignItems: window.innerWidth < 768 ? 'flex-start' : 'center'
                   }}
                 >
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px'
-                  }}>
-                    <span style={{ fontWeight: '500' }}>{nom.game}</span>
-                    <span style={{ 
-                      color: '#32CD32',
-                      fontSize: '0.875rem'
-                    }}>nominated by {nom.discordUsername}</span>
-                  </div>
+                  <span style={{ fontWeight: '500' }}>{nom.game}</span>
+                  <span style={{ 
+                    color: '#32CD32',
+                    fontSize: '0.875rem',
+                    marginTop: window.innerWidth < 768 ? '4px' : '0'
+                  }}>nominated by {nom.discordUsername}</span>
                 </div>
               ))}
             </div>
