@@ -29,6 +29,7 @@ const Leaderboard = () => {
   const [yearlyData, setYearlyData] = useState<LeaderboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   // Effect for height calculation
   useEffect(() => {
@@ -36,6 +37,7 @@ const Leaderboard = () => {
       const content = document.getElementById('leaderboard-container');
       if (content) {
         const height = content.getBoundingClientRect().height;
+        console.log('Sending height:', height);
         window.parent.postMessage({
           type: 'resize',
           height: height
@@ -48,16 +50,23 @@ const Leaderboard = () => {
     }
   }, [monthlyData, yearlyData, activeTab]);
 
-  // Quick tab switch on initial load
+  // Initial tab switch sequence
   useEffect(() => {
-    if (monthlyData && yearlyData && !loading) {
-      // Quick switch to yearly and back to monthly
+    if (!initialized && monthlyData && yearlyData && !loading) {
+      console.log('Starting initialization sequence');
+      // Switch to yearly
       setActiveTab('yearly');
-      setTimeout(() => {
+      
+      // Switch back to monthly after a delay
+      const timer = setTimeout(() => {
         setActiveTab('monthly');
-      }, 50);
+        setInitialized(true);
+        console.log('Initialization sequence complete');
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
-  }, [monthlyData, yearlyData, loading]);
+  }, [monthlyData, yearlyData, loading, initialized]);
 
   const fetchData = async () => {
     try {
@@ -94,7 +103,13 @@ const Leaderboard = () => {
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
 
   return (
-    <div id="leaderboard-container" style={{ backgroundColor: '#17254A' }}>
+    <div id="leaderboard-container" style={{ 
+      backgroundColor: '#17254A',
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: 'min-content',
+      maxHeight: 'fit-content'
+    }}>
       <div className="tab-container" style={{ margin: 0 }}>
         <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
              onClick={() => setActiveTab('monthly')}>
