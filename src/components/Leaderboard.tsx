@@ -23,6 +23,10 @@ interface LeaderboardData {
   lastUpdated: string;
 }
 
+import React, { useState, useEffect } from 'react';
+
+// ... (keep existing interfaces)
+
 const Leaderboard = () => {
   const [activeTab, setActiveTab] = useState('monthly');
   const [monthlyData, setMonthlyData] = useState<LeaderboardData | null>(null);
@@ -43,9 +47,10 @@ const Leaderboard = () => {
     }
 
     if (monthlyData || yearlyData) {
-      sendHeight();
-      const timer = setTimeout(sendHeight, 100);
-      return () => clearTimeout(timer);
+      // Send height immediately after render
+      requestAnimationFrame(() => {
+        sendHeight();
+      });
     }
   }, [monthlyData, yearlyData, activeTab]);
 
@@ -84,7 +89,11 @@ const Leaderboard = () => {
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
 
   return (
-    <div id="leaderboard-container" style={{ backgroundColor: '#17254A' }}>
+    <div id="leaderboard-container" style={{ 
+      backgroundColor: '#17254A', 
+      height: 'fit-content',
+      overflow: 'hidden'
+    }}>
       <div className="tab-container" style={{ margin: 0 }}>
         <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
              onClick={() => setActiveTab('monthly')}>
@@ -141,16 +150,15 @@ const Leaderboard = () => {
                  className="username">
                 {entry.username}
               </a>
-              <div className="flex items-center gap-2">
-                {activeTab === 'monthly' ? (
-                  <>
-                    <span>{entry.completedAchievements}/{entry.totalAchievements}</span>
-                    <span>{entry.completionPercentage}%</span>
-                  </>
-                ) : (
-                  <span>{entry.points} points</span>
-                )}
-              </div>
+              {activeTab === 'monthly' && (
+                <div className="flex flex-col gap-0.5">
+                  <div>{entry.completedAchievements}/{entry.totalAchievements}</div>
+                  <div>{entry.completionPercentage}%</div>
+                </div>
+              )}
+              {activeTab === 'yearly' && (
+                <div>{entry.points} points</div>
+              )}
             </div>
           </div>
         ))}
@@ -160,7 +168,7 @@ const Leaderboard = () => {
         fontSize: '0.875rem',
         color: '#8892b0',
         textAlign: 'center',
-        padding: '1rem',
+        padding: '1rem 0',
         borderTop: '1px solid #2a3a6a',
         marginTop: '0.5rem'
       }}>
