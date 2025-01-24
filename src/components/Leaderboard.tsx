@@ -23,10 +23,6 @@ interface LeaderboardData {
   lastUpdated: string;
 }
 
-import React, { useState, useEffect } from 'react';
-
-// ... (keep existing interfaces)
-
 const Leaderboard = () => {
   const [activeTab, setActiveTab] = useState('monthly');
   const [monthlyData, setMonthlyData] = useState<LeaderboardData | null>(null);
