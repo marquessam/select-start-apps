@@ -29,7 +29,7 @@ const Leaderboard = () => {
   const [yearlyData, setYearlyData] = useState<LeaderboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState(false);
+  const [attempts, setAttempts] = useState(0);
 
   // Effect for height calculation
   useEffect(() => {
@@ -37,7 +37,6 @@ const Leaderboard = () => {
       const content = document.getElementById('leaderboard-container');
       if (content) {
         const height = content.getBoundingClientRect().height;
-        console.log('Sending height:', height);
         window.parent.postMessage({
           type: 'resize',
           height: height
@@ -50,23 +49,20 @@ const Leaderboard = () => {
     }
   }, [monthlyData, yearlyData, activeTab]);
 
-  // Initial tab switch sequence
+  // Multiple tab switch attempts
   useEffect(() => {
-    if (!initialized && monthlyData && yearlyData && !loading) {
-      console.log('Starting initialization sequence');
-      // Switch to yearly
-      setActiveTab('yearly');
-      
-      // Switch back to monthly after a delay
+    if (monthlyData && yearlyData && !loading && attempts < 3) {
       const timer = setTimeout(() => {
-        setActiveTab('monthly');
-        setInitialized(true);
-        console.log('Initialization sequence complete');
-      }, 100);
+        setActiveTab('yearly');
+        setTimeout(() => {
+          setActiveTab('monthly');
+          setAttempts(prev => prev + 1);
+        }, 100);
+      }, 500 * attempts); // Increasing delay for each attempt
 
       return () => clearTimeout(timer);
     }
-  }, [monthlyData, yearlyData, loading, initialized]);
+  }, [monthlyData, yearlyData, loading, attempts]);
 
   const fetchData = async () => {
     try {
