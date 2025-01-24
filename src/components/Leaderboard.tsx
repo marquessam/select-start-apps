@@ -30,22 +30,41 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Use useLayoutEffect to update height before browser paint
-  useLayoutEffect(() => {
-    function updateHeight() {
+  // Use MutationObserver to track content changes
+  useEffect(() => {
+    const updateHeight = () => {
       const container = document.getElementById('leaderboard-container');
       const wrapper = document.getElementById('leaderboard-wrapper');
       if (container && wrapper) {
+        // Force a reflow
+        wrapper.style.display = 'none';
+        wrapper.offsetHeight;
+        wrapper.style.display = '';
+        
         const height = wrapper.offsetHeight;
         window.parent.postMessage({
           type: 'resize',
           height
         }, '*');
       }
-    }
+    };
 
     if (!loading && (monthlyData || yearlyData)) {
+      // Initial height update
       updateHeight();
+
+      // Set up observer for content changes
+      const observer = new MutationObserver(updateHeight);
+      const container = document.getElementById('leaderboard-container');
+      if (container) {
+        observer.observe(container, {
+          childList: true,
+          subtree: true,
+          attributes: true
+        });
+      }
+
+      return () => observer.disconnect();
     }
   }, [loading, monthlyData, yearlyData, activeTab]);
 
@@ -82,9 +101,9 @@ const Leaderboard = () => {
   if (!monthlyData || !yearlyData) return null;
 
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
-
-  return (
-    <div id="leaderboard-container" style={{ backgroundColor: '#17254A', position: 'relative' }}>
+  
+ return (
+    <div id="leaderboard-container" style={{ backgroundColor: '#17254A', position: 'relative', height: 'auto' }}>
       <div id="leaderboard-wrapper" style={{ position: 'relative' }}>
         <div className="tab-container" style={{ margin: 0 }}>
           <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
