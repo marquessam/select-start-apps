@@ -30,25 +30,24 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    function sendHeight(): void {
-      const content = document.getElementById('leaderboard-container');
-      if (content) {
-        const rect = content.getBoundingClientRect();
+  // Use useLayoutEffect to update height before browser paint
+  useLayoutEffect(() => {
+    function updateHeight() {
+      const container = document.getElementById('leaderboard-container');
+      const wrapper = document.getElementById('leaderboard-wrapper');
+      if (container && wrapper) {
+        const height = wrapper.offsetHeight;
         window.parent.postMessage({
           type: 'resize',
-          height: Math.ceil(rect.height)
+          height
         }, '*');
       }
     }
 
-    if (monthlyData || yearlyData) {
-      // Send height immediately after render
-      requestAnimationFrame(() => {
-        sendHeight();
-      });
+    if (!loading && (monthlyData || yearlyData)) {
+      updateHeight();
     }
-  }, [monthlyData, yearlyData, activeTab]);
+  }, [loading, monthlyData, yearlyData, activeTab]);
 
   const fetchData = async () => {
     try {
@@ -85,90 +84,88 @@ const Leaderboard = () => {
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
 
   return (
-    <div id="leaderboard-container" style={{ 
-      backgroundColor: '#17254A', 
-      height: 'fit-content',
-      overflow: 'hidden'
-    }}>
-      <div className="tab-container" style={{ margin: 0 }}>
-        <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
-             onClick={() => setActiveTab('monthly')}>
-          Monthly Challenge
+    <div id="leaderboard-container" style={{ backgroundColor: '#17254A', position: 'relative' }}>
+      <div id="leaderboard-wrapper" style={{ position: 'relative' }}>
+        <div className="tab-container" style={{ margin: 0 }}>
+          <div className={`tab ${activeTab === 'monthly' ? 'active' : ''}`}
+               onClick={() => setActiveTab('monthly')}>
+            Monthly Challenge
+          </div>
+          <div className={`tab ${activeTab === 'yearly' ? 'active' : ''}`}
+               onClick={() => setActiveTab('yearly')}>
+            Yearly Rankings
+          </div>
         </div>
-        <div className={`tab ${activeTab === 'yearly' ? 'active' : ''}`}
-             onClick={() => setActiveTab('yearly')}>
-          Yearly Rankings
+
+        {activeTab === 'monthly' && monthlyData.gameInfo && (
+          <>
+            <div className="game-header">
+              <img src={`https://retroachievements.org${monthlyData.gameInfo.ImageIcon}`} 
+                   alt={monthlyData.gameInfo.Title}
+                   onError={(e) => {
+                     e.currentTarget.src = 'https://retroachievements.org/Images/017657.png';
+                   }} />
+              <h2 className="game-title">{monthlyData.gameInfo.Title}</h2>
+            </div>
+
+            <div className="challenge-list">
+              &gt; This challenge runs from January 1st, 2025 to January 31st, 2025.<br />
+              &gt; Hardcore mode must be enabled<br />
+              &gt; All achievements are eligible<br />
+              &gt; Progress tracked via retroachievements<br />
+              &gt; No hacks/save states/cheats allowed<br />
+              &gt; Any discrepancies, ties, or edge case situations will be judged case by case and settled upon in the multiplayer game of each combatant's choosing.
+            </div>
+          </>
+        )}
+
+        <div style={{ padding: '8px 16px' }}>
+          {currentData.leaderboard.map((entry, index) => (
+            <div key={entry.username} className="leaderboard-entry">
+              <div className={`rank ${
+                index === 0 ? 'medal-gold' : 
+                index === 1 ? 'medal-silver' : 
+                index === 2 ? 'medal-bronze' : ''
+              }`}>
+                #{index + 1}
+              </div>
+              <img src={entry.profileImage}
+                   alt={entry.username}
+                   className="profile-image"
+                   onError={(e) => {
+                     e.currentTarget.src = 'https://retroachievements.org/UserPic/_user.png';
+                   }} />
+              <div className="flex-grow">
+                <a href={entry.profileUrl} 
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="username">
+                  {entry.username}
+                </a>
+                {activeTab === 'monthly' && (
+                  <div className="flex flex-col gap-0.5">
+                    <div>{entry.completedAchievements}/{entry.totalAchievements}</div>
+                    <div>{entry.completionPercentage}%</div>
+                  </div>
+                )}
+                {activeTab === 'yearly' && (
+                  <div>{entry.points} points</div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
 
-      {activeTab === 'monthly' && monthlyData.gameInfo && (
-        <>
-          <div className="game-header">
-            <img src={`https://retroachievements.org${monthlyData.gameInfo.ImageIcon}`} 
-                 alt={monthlyData.gameInfo.Title}
-                 onError={(e) => {
-                   e.currentTarget.src = 'https://retroachievements.org/Images/017657.png';
-                 }} />
-            <h2 className="game-title">{monthlyData.gameInfo.Title}</h2>
-          </div>
-
-          <div className="challenge-list">
-            &gt; This challenge runs from January 1st, 2025 to January 31st, 2025.<br />
-            &gt; Hardcore mode must be enabled<br />
-            &gt; All achievements are eligible<br />
-            &gt; Progress tracked via retroachievements<br />
-            &gt; No hacks/save states/cheats allowed<br />
-            &gt; Any discrepancies, ties, or edge case situations will be judged case by case and settled upon in the multiplayer game of each combatant's choosing.
-          </div>
-        </>
-      )}
-
-      <div style={{ padding: '8px 16px' }}>
-        {currentData.leaderboard.map((entry, index) => (
-          <div key={entry.username} className="leaderboard-entry">
-            <div className={`rank ${
-              index === 0 ? 'medal-gold' : 
-              index === 1 ? 'medal-silver' : 
-              index === 2 ? 'medal-bronze' : ''
-            }`}>
-              #{index + 1}
-            </div>
-            <img src={entry.profileImage}
-                 alt={entry.username}
-                 className="profile-image"
-                 onError={(e) => {
-                   e.currentTarget.src = 'https://retroachievements.org/UserPic/_user.png';
-                 }} />
-            <div className="flex-grow">
-              <a href={entry.profileUrl} 
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 className="username">
-                {entry.username}
-              </a>
-              {activeTab === 'monthly' && (
-                <div className="flex flex-col gap-0.5">
-                  <div>{entry.completedAchievements}/{entry.totalAchievements}</div>
-                  <div>{entry.completionPercentage}%</div>
-                </div>
-              )}
-              {activeTab === 'yearly' && (
-                <div>{entry.points} points</div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ 
-        fontSize: '0.875rem',
-        color: '#8892b0',
-        textAlign: 'center',
-        padding: '1rem 0',
-        borderTop: '1px solid #2a3a6a',
-        marginTop: '0.5rem'
-      }}>
-        Last updated: {new Date(currentData.lastUpdated).toLocaleString()}
+        <div style={{ 
+          fontSize: '0.875rem',
+          color: '#8892b0',
+          textAlign: 'center',
+          padding: '1rem 0',
+          borderTop: '1px solid #2a3a6a',
+          marginTop: '0.5rem'
+        }}>
+          Last updated: {new Date(currentData.lastUpdated).toLocaleString()}
+        </div>
       </div>
     </div>
   );
