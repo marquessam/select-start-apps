@@ -72,21 +72,19 @@ const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => 
       return (b.points || 0) - (a.points || 0);
     });
 
-    let currentRank = 1;
-    let currentValue: string | number | null = null;
-    let skippedRanks = 0;
+    let currentRank = 0;
+    let tieStart = 0;
+    let previousValue: number | string | null = null;
 
     return sortedEntries.map((entry, index) => {
-      const value: string | number = activeTab === 'monthly'
+      const currentValue = activeTab === 'monthly'
         ? `${entry.completionPercentage || 0}-${entry.completedAchievements || 0}`
         : entry.points || 0;
 
-      if (value !== currentValue) {
-        currentRank = index + 1;
-        currentValue = value;
-        skippedRanks = 0;
-      } else {
-        skippedRanks++;
+      if (currentValue !== previousValue) {
+        currentRank = tieStart + 1;
+        tieStart = index;
+        previousValue = currentValue;
       }
 
       return { ...entry, rank: currentRank };
@@ -175,15 +173,11 @@ const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => 
       <div className="p-4">
         {currentData.leaderboard.map((entry) => (
           <div key={entry.username} className="leaderboard-entry">
-            <div
-              className={`rank ${
-                entry.rank === 1 ? 'medal-gold' : 
-                entry.rank === 2 ? 'medal-silver' : 
-                entry.rank === 3 ? 'medal-bronze' : ''
-              }`}
-            >
-              #{entry.rank}
-            </div>
+            <div className={`rank ${
+              entry.rank === 1 ? 'medal-gold' : 
+              entry.rank === 2 ? 'medal-silver' : 
+              entry.rank === 3 ? 'medal-bronze' : ''
+            }`}>
             <img
               src={entry.profileImage}
               alt={entry.username}
