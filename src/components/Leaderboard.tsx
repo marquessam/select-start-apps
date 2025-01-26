@@ -64,7 +64,7 @@ const Leaderboard = () => {
 
   const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
     let rank = 0;
-    let prevValue = null;
+    let prevValue: string | number | null = null;
     let tieCount = 0;
 
     // Sort entries first
@@ -96,7 +96,7 @@ const Leaderboard = () => {
       return { ...entry, rank };
     });
   };
-
+  
   const fetchData = async () => {
     try {
       const [monthlyResponse, yearlyResponse] = await Promise.all([
