@@ -63,33 +63,40 @@ const Leaderboard = () => {
   }, [monthlyData, yearlyData, loading, attempts]);
 
 const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
-    let rank = 0;
-    let prevValue: string | number | null = null;
-    let tieCount = 0;
-
+    // Sort entries first
     const sortedEntries = [...entries].sort((a, b) => {
       if (activeTab === 'monthly') {
+        // For monthly, compare completion percentage first
         const percentDiff = (b.completionPercentage || 0) - (a.completionPercentage || 0);
         if (percentDiff !== 0) return percentDiff;
+        // If percentages are equal, compare achievements
         return (b.completedAchievements || 0) - (a.completedAchievements || 0);
       }
+      // For yearly, sort by points
       return (b.points || 0) - (a.points || 0);
     });
 
+    // Track current rank and values for ties
+    let currentRank = 1;
+    let currentValue = null;
+    let skippedRanks = 0;
+
     return sortedEntries.map((entry, index) => {
-      const currentValue: string | number = activeTab === 'monthly'
+      const value = activeTab === 'monthly'
         ? `${entry.completionPercentage || 0}-${entry.completedAchievements || 0}`
         : entry.points || 0;
 
-      if (currentValue !== prevValue) {
-        rank = index + 1 - tieCount;
-        tieCount = 0;
+      if (value !== currentValue) {
+        // New value = new rank, accounting for skipped ranks
+        currentRank = index + 1;
+        currentValue = value;
+        skippedRanks = 0;
       } else {
-        tieCount++;
+        // Same value = same rank, increment skipped ranks
+        skippedRanks++;
       }
 
-      prevValue = currentValue;
-      return { ...entry, rank };
+      return { ...entry, rank: currentRank };
     });
   };
   
