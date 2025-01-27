@@ -62,7 +62,7 @@ const Leaderboard = () => {
     }
   }, [monthlyData, yearlyData, loading, attempts]);
 
-const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
+  const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
     const sortedEntries = [...entries].sort((a, b) => {
       if (activeTab === 'monthly') {
         const percentDiff = (b.completionPercentage || 0) - (a.completionPercentage || 0);
@@ -72,27 +72,25 @@ const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => 
       return (b.points || 0) - (a.points || 0);
     });
 
-    let currentRank = 1;
-    let currentValue: string | number | null = null;
-    let skippedRanks = 0;
+    let currentRank = 0;
+    let tieStart = 0;
+    let previousValue: number | string | null = null;
 
     return sortedEntries.map((entry, index) => {
-      const value: string | number = activeTab === 'monthly'
+      const currentValue = activeTab === 'monthly'
         ? `${entry.completionPercentage || 0}-${entry.completedAchievements || 0}`
         : entry.points || 0;
 
-      if (value !== currentValue) {
+      if (currentValue !== previousValue) {
         currentRank = index + 1;
-        currentValue = value;
-        skippedRanks = 0;
-      } else {
-        skippedRanks++;
+        tieStart = index;
+        previousValue = currentValue;
       }
 
       return { ...entry, rank: currentRank };
     });
   };
-  
+
   const fetchData = async () => {
     try {
       const [monthlyResponse, yearlyResponse] = await Promise.all([
