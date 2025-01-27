@@ -62,7 +62,7 @@ const Leaderboard = () => {
     }
   }, [monthlyData, yearlyData, loading, attempts]);
 
- const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
+const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
     // First sort the entries
     const sortedEntries = [...entries].sort((a, b) => {
         if (activeTab === 'monthly') {
@@ -70,27 +70,27 @@ const Leaderboard = () => {
             if (percentDiff !== 0) return percentDiff;
             return (b.completedAchievements || 0) - (a.completedAchievements || 0);
         }
-        // For yearly, we first sort by points
+        // For yearly, first sort by points
         const pointsDiff = (b.points || 0) - (a.points || 0);
         if (pointsDiff !== 0) return pointsDiff;
-        // If points are equal, we can add secondary sorting criteria here
-        // For example, by number of achievements
+        // If points are equal, sort by achievements
         return (b.completedAchievements || 0) - (a.completedAchievements || 0);
     });
 
     // Initialize variables for rank tracking
     let currentRank = 1;
     let equalRankCount = 0;
-    let lastValue: number | string | null = null;
+    let lastValue: string | number = activeTab === 'monthly' 
+        ? `${sortedEntries[0]?.completionPercentage || 0}-${sortedEntries[0]?.completedAchievements || 0}`
+        : sortedEntries[0]?.points || 0;
 
     // Calculate ranks
     return sortedEntries.map((entry, index) => {
         const currentValue = activeTab === 'monthly'
-            ? `${entry.completionPercentage}-${entry.completedAchievements}`
-            : entry.points;
+            ? `${entry.completionPercentage || 0}-${entry.completedAchievements || 0}`
+            : entry.points || 0;
 
         if (index === 0) {
-            lastValue = currentValue;
             return { ...entry, rank: currentRank };
         }
 
@@ -107,6 +107,7 @@ const Leaderboard = () => {
         }
     });
 };
+  
   const fetchData = async () => {
     try {
       const [monthlyResponse, yearlyResponse] = await Promise.all([
