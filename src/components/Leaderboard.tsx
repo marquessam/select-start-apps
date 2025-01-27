@@ -24,6 +24,59 @@ interface LeaderboardData {
   lastUpdated: string;
 }
 
+const processMonthlyRanks = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
+    // Sort monthly entries
+    const sortedEntries = [...entries].sort((a, b) => {
+        const percentDiff = (b.completionPercentage || 0) - (a.completionPercentage || 0);
+        if (percentDiff !== 0) return percentDiff;
+        return (b.completedAchievements || 0) - (a.completedAchievements || 0);
+    });
+
+    let currentRank = 1;
+    let previousPercentage: number | null = null;
+    let previousAchievements: number | null = null;
+    
+    return sortedEntries.map((entry, index) => {
+        const currentPercentage = entry.completionPercentage || 0;
+        const currentAchievements = entry.completedAchievements || 0;
+        
+        if (index === 0) {
+            previousPercentage = currentPercentage;
+            previousAchievements = currentAchievements;
+            return { ...entry, rank: 1 };
+        }
+        
+        if (currentPercentage !== previousPercentage || 
+            currentAchievements !== previousAchievements) {
+            currentRank = index + 1;
+        }
+        
+        previousPercentage = currentPercentage;
+        previousAchievements = currentAchievements;
+        return { ...entry, rank: currentRank };
+    });
+};
+
+const processYearlyRanks = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
+    // Sort yearly entries
+    const sortedEntries = [...entries].sort((a, b) => 
+        (b.points || 0) - (a.points || 0)
+    );
+
+    return sortedEntries.map((entry, index) => {
+        if (index === 0) return { ...entry, rank: 1 };
+        
+        const prevEntry = sortedEntries[index - 1];
+        const currentPoints = entry.points || 0;
+        const prevPoints = prevEntry.points || 0;
+        
+        return {
+            ...entry,
+            rank: currentPoints === prevPoints ? prevEntry.rank : index + 1
+        };
+    });
+};
+
 const Leaderboard = () => {
   const [activeTab, setActiveTab] = useState('monthly');
   const [monthlyData, setMonthlyData] = useState<LeaderboardData | null>(null);
@@ -61,77 +114,7 @@ const Leaderboard = () => {
       return () => clearTimeout(timer);
     }
   }, [monthlyData, yearlyData, loading, attempts]);
-const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
-    const processMonthlyRanks = (sortedEntries: LeaderboardEntry[]): LeaderboardEntry[] => {
-        let currentRank = 1;
-        let previousPercentage: number | null = null;
-        let previousAchievements: number | null = null;
-        
-        return sortedEntries.map((entry, index) => {
-            const currentPercentage = entry.completionPercentage || 0;
-            const currentAchievements = entry.completedAchievements || 0;
-            
-            if (index === 0) {
-                previousPercentage = currentPercentage;
-                previousAchievements = currentAchievements;
-                return { ...entry, rank: 1 };
-            }
-            
-            if (currentPercentage !== previousPercentage || 
-                currentAchievements !== previousAchievements) {
-                currentRank = index + 1;
-            }
-            
-            previousPercentage = currentPercentage;
-            previousAchievements = currentAchievements;
-            return { ...entry, rank: currentRank };
-        });
-    };
 
-    const processYearlyRanks = (sortedEntries: LeaderboardEntry[]): LeaderboardEntry[] => {
-        let currentRank = 1;
-        let sameRankCount = 0;
-        let previousPoints = sortedEntries[0]?.points || 0;
-        
-        return sortedEntries.map((entry, index) => {
-            const currentPoints = entry.points || 0;
-            
-            if (index === 0) {
-                return { ...entry, rank: 1 };
-            }
-            
-            if (currentPoints === previousPoints) {
-                // Same points as previous entry, keep the same rank
-                sameRankCount++;
-            } else {
-                // Different points, new rank should be current index + 1
-                currentRank = index + 1;
-                sameRankCount = 0;
-            }
-            
-            previousPoints = currentPoints;
-            return { ...entry, rank: currentRank };
-        });
-    };
-
-    // Sort entries based on active tab
-    const sortedEntries = [...entries].sort((a, b) => {
-        if (activeTab === 'monthly') {
-            const percentDiff = (b.completionPercentage || 0) - (a.completionPercentage || 0);
-            if (percentDiff !== 0) return percentDiff;
-            return (b.completedAchievements || 0) - (a.completedAchievements || 0);
-        } else {
-            // Yearly tab sorting
-            return (b.points || 0) - (a.points || 0);
-        }
-    });
-
-    // Apply appropriate ranking based on tab
-    return activeTab === 'monthly' 
-        ? processMonthlyRanks(sortedEntries)
-        : processYearlyRanks(sortedEntries);
-};
-  
   const fetchData = async () => {
     try {
       const [monthlyResponse, yearlyResponse] = await Promise.all([
@@ -144,8 +127,9 @@ const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => 
       const monthlyData = await monthlyResponse.json();
       const yearlyData = await yearlyResponse.json();
       
-      monthlyData.leaderboard = processLeaderboard(monthlyData.leaderboard);
-      yearlyData.leaderboard = processLeaderboard(yearlyData.leaderboard);
+      // Process each leaderboard separately
+      monthlyData.leaderboard = processMonthlyRanks(monthlyData.leaderboard);
+      yearlyData.leaderboard = processYearlyRanks(yearlyData.leaderboard);
       
       setMonthlyData(monthlyData);
       setYearlyData(yearlyData);
@@ -206,7 +190,6 @@ const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => 
             &gt; Progress tracked via retroachievements<br />
             &gt; No hacks/save states/cheats allowed<br />
             &gt; Any discrepancies, ties, or edge case situations will be judged case by case and settled upon in the multiplayer game of each combatant's choosing.
-
           </div>
         </>
       )}
