@@ -70,41 +70,35 @@ const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => 
             if (percentDiff !== 0) return percentDiff;
             return (b.completedAchievements || 0) - (a.completedAchievements || 0);
         }
-        // For yearly, first sort by points
-        const pointsDiff = (b.points || 0) - (a.points || 0);
-        if (pointsDiff !== 0) return pointsDiff;
-        // If points are equal, sort by achievements
-        return (b.completedAchievements || 0) - (a.completedAchievements || 0);
+        return (b.points || 0) - (a.points || 0);
     });
 
-    // Initialize variables for rank tracking
+    // Initialize tracking variables
     let currentRank = 1;
-    let equalRankCount = 0;
-    let lastValue: string | number = activeTab === 'monthly' 
-        ? `${sortedEntries[0]?.completionPercentage || 0}-${sortedEntries[0]?.completedAchievements || 0}`
-        : sortedEntries[0]?.points || 0;
+    let previousPoints: number | null = null;
+    let skippedRanks = 0;
 
-    // Calculate ranks
+    // Calculate ranks with proper tie handling
     return sortedEntries.map((entry, index) => {
-        const currentValue = activeTab === 'monthly'
-            ? `${entry.completionPercentage || 0}-${entry.completedAchievements || 0}`
-            : entry.points || 0;
-
+        const currentPoints = entry.points || 0;
+        
+        // First entry always gets rank 1
         if (index === 0) {
-            return { ...entry, rank: currentRank };
+            previousPoints = currentPoints;
+            return { ...entry, rank: 1 };
         }
 
-        // Check if current value equals previous value
-        if (currentValue === lastValue) {
-            equalRankCount++;
-            return { ...entry, rank: currentRank };
-        } else {
-            // When value changes, new rank should be current position + 1
+        // If points are different from previous entry
+        if (currentPoints !== previousPoints) {
             currentRank = index + 1;
-            equalRankCount = 0;
-            lastValue = currentValue;
-            return { ...entry, rank: currentRank };
+            skippedRanks = 0;
+        } else {
+            // For tied scores, keep same rank but track how many we've skipped
+            skippedRanks++;
         }
+
+        previousPoints = currentPoints;
+        return { ...entry, rank: currentRank };
     });
 };
   
