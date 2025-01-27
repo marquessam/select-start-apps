@@ -63,6 +63,7 @@ const Leaderboard = () => {
   }, [monthlyData, yearlyData, loading, attempts]);
 
   const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
+    // First sort the entries
     const sortedEntries = [...entries].sort((a, b) => {
       if (activeTab === 'monthly') {
         const percentDiff = (b.completionPercentage || 0) - (a.completionPercentage || 0);
@@ -72,25 +73,42 @@ const Leaderboard = () => {
       return (b.points || 0) - (a.points || 0);
     });
 
-    let currentRank = 0;
-    let tieStart = 0;
-    let previousValue: number | string | null = null;
+    // Initialize variables for rank tracking
+    let currentRank = 1;
+    let sameRankCount = 0;
+    let lastValue = activeTab === 'monthly' 
+      ? `${sortedEntries[0]?.completionPercentage}-${sortedEntries[0]?.completedAchievements}`
+      : sortedEntries[0]?.points;
 
+    // Calculate ranks
     return sortedEntries.map((entry, index) => {
       const currentValue = activeTab === 'monthly'
-        ? `${entry.completionPercentage || 0}-${entry.completedAchievements || 0}`
-        : entry.points || 0;
+        ? `${entry.completionPercentage}-${entry.completedAchievements}`
+        : entry.points;
 
-      if (currentValue !== previousValue) {
+      // If value changes, update rank and reset counter
+      if (currentValue !== lastValue) {
         currentRank = index + 1;
-        tieStart = index;
-        previousValue = currentValue;
+        sameRankCount = 0;
+        lastValue = currentValue;
+      } else {
+        sameRankCount++;
+      }
+
+      // For yearly rankings, we want to check points specifically
+      if (activeTab === 'yearly') {
+        const points = entry.points || 0;
+        const prevEntry = index > 0 ? sortedEntries[index - 1] : null;
+        
+        if (index === 0 || (prevEntry && points !== prevEntry.points)) {
+          currentRank = index + 1;
+        }
       }
 
       return { ...entry, rank: currentRank };
     });
   };
-
+  
   const fetchData = async () => {
     try {
       const [monthlyResponse, yearlyResponse] = await Promise.all([
