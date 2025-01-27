@@ -62,53 +62,51 @@ const Leaderboard = () => {
     }
   }, [monthlyData, yearlyData, loading, attempts]);
 
-  const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
+ const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
     // First sort the entries
     const sortedEntries = [...entries].sort((a, b) => {
-      if (activeTab === 'monthly') {
-        const percentDiff = (b.completionPercentage || 0) - (a.completionPercentage || 0);
-        if (percentDiff !== 0) return percentDiff;
+        if (activeTab === 'monthly') {
+            const percentDiff = (b.completionPercentage || 0) - (a.completionPercentage || 0);
+            if (percentDiff !== 0) return percentDiff;
+            return (b.completedAchievements || 0) - (a.completedAchievements || 0);
+        }
+        // For yearly, we first sort by points
+        const pointsDiff = (b.points || 0) - (a.points || 0);
+        if (pointsDiff !== 0) return pointsDiff;
+        // If points are equal, we can add secondary sorting criteria here
+        // For example, by number of achievements
         return (b.completedAchievements || 0) - (a.completedAchievements || 0);
-      }
-      return (b.points || 0) - (a.points || 0);
     });
 
     // Initialize variables for rank tracking
     let currentRank = 1;
-    let sameRankCount = 0;
-    let lastValue = activeTab === 'monthly' 
-      ? `${sortedEntries[0]?.completionPercentage}-${sortedEntries[0]?.completedAchievements}`
-      : sortedEntries[0]?.points;
+    let equalRankCount = 0;
+    let lastValue: number | string | null = null;
 
     // Calculate ranks
     return sortedEntries.map((entry, index) => {
-      const currentValue = activeTab === 'monthly'
-        ? `${entry.completionPercentage}-${entry.completedAchievements}`
-        : entry.points;
+        const currentValue = activeTab === 'monthly'
+            ? `${entry.completionPercentage}-${entry.completedAchievements}`
+            : entry.points;
 
-      // If value changes, update rank and reset counter
-      if (currentValue !== lastValue) {
-        currentRank = index + 1;
-        sameRankCount = 0;
-        lastValue = currentValue;
-      } else {
-        sameRankCount++;
-      }
-
-      // For yearly rankings, we want to check points specifically
-      if (activeTab === 'yearly') {
-        const points = entry.points || 0;
-        const prevEntry = index > 0 ? sortedEntries[index - 1] : null;
-        
-        if (index === 0 || (prevEntry && points !== prevEntry.points)) {
-          currentRank = index + 1;
+        if (index === 0) {
+            lastValue = currentValue;
+            return { ...entry, rank: currentRank };
         }
-      }
 
-      return { ...entry, rank: currentRank };
+        // Check if current value equals previous value
+        if (currentValue === lastValue) {
+            equalRankCount++;
+            return { ...entry, rank: currentRank };
+        } else {
+            // When value changes, new rank should be current position + 1
+            currentRank = index + 1;
+            equalRankCount = 0;
+            lastValue = currentValue;
+            return { ...entry, rank: currentRank };
+        }
     });
-  };
-  
+};
   const fetchData = async () => {
     try {
       const [monthlyResponse, yearlyResponse] = await Promise.all([
