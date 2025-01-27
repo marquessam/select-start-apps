@@ -63,43 +63,71 @@ const Leaderboard = () => {
   }, [monthlyData, yearlyData, loading, attempts]);
 
 const processLeaderboard = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
-    // First sort the entries
+    const processMonthlyRanks = (sortedEntries: LeaderboardEntry[]): LeaderboardEntry[] => {
+        let currentRank = 1;
+        let previousPercentage: number | null = null;
+        let previousAchievements: number | null = null;
+        
+        return sortedEntries.map((entry, index) => {
+            const currentPercentage = entry.completionPercentage || 0;
+            const currentAchievements = entry.completedAchievements || 0;
+            
+            if (index === 0) {
+                previousPercentage = currentPercentage;
+                previousAchievements = currentAchievements;
+                return { ...entry, rank: 1 };
+            }
+            
+            // New rank if either percentage or achievements differ
+            if (currentPercentage !== previousPercentage || 
+                currentAchievements !== previousAchievements) {
+                currentRank = index + 1;
+            }
+            
+            previousPercentage = currentPercentage;
+            previousAchievements = currentAchievements;
+            return { ...entry, rank: currentRank };
+        });
+    };
+
+    const processYearlyRanks = (sortedEntries: LeaderboardEntry[]): LeaderboardEntry[] => {
+        let currentRank = 1;
+        let previousPoints: number | null = null;
+        
+        return sortedEntries.map((entry, index) => {
+            const currentPoints = entry.points || 0;
+            
+            if (index === 0) {
+                previousPoints = currentPoints;
+                return { ...entry, rank: 1 };
+            }
+            
+            if (currentPoints !== previousPoints) {
+                currentRank = index + 1;
+            }
+            
+            previousPoints = currentPoints;
+            return { ...entry, rank: currentRank };
+        });
+    };
+
+    // First sort the entries based on the active tab
     const sortedEntries = [...entries].sort((a, b) => {
         if (activeTab === 'monthly') {
+            // Sort by completion percentage first, then by number of achievements
             const percentDiff = (b.completionPercentage || 0) - (a.completionPercentage || 0);
             if (percentDiff !== 0) return percentDiff;
             return (b.completedAchievements || 0) - (a.completedAchievements || 0);
-        }
-        return (b.points || 0) - (a.points || 0);
-    });
-
-    // Initialize tracking variables
-    let currentRank = 1;
-    let previousPoints: number | null = null;
-    let skippedRanks = 0;
-
-    // Calculate ranks with proper tie handling
-    return sortedEntries.map((entry, index) => {
-        const currentPoints = entry.points || 0;
-        
-        // First entry always gets rank 1
-        if (index === 0) {
-            previousPoints = currentPoints;
-            return { ...entry, rank: 1 };
-        }
-
-        // If points are different from previous entry
-        if (currentPoints !== previousPoints) {
-            currentRank = index + 1;
-            skippedRanks = 0;
         } else {
-            // For tied scores, keep same rank but track how many we've skipped
-            skippedRanks++;
+            // Yearly tab: sort by points only
+            return (b.points || 0) - (a.points || 0);
         }
-
-        previousPoints = currentPoints;
-        return { ...entry, rank: currentRank };
     });
+
+    // Process rankings based on the active tab
+    return activeTab === 'monthly' 
+        ? processMonthlyRanks(sortedEntries)
+        : processYearlyRanks(sortedEntries);
 };
   
   const fetchData = async () => {
