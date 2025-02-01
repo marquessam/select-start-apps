@@ -184,7 +184,7 @@ const Leaderboard = () => {
           </div>
 
           <div className="challenge-list">
-            &gt; This challenge runs from January 1st, 2025 to January 31st, 2025.<br />
+            &gt; This challenge runs from February 1st, 2025 to February 28th, 2025.<br />
             &gt; Hardcore mode must be enabled<br />
             &gt; All achievements are eligible<br />
             &gt; Progress tracked via retroachievements<br />
