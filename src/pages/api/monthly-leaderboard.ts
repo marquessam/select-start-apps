@@ -99,7 +99,7 @@ export default async function handler(
           userData.monthlyAchievements?.[year]?.[currentMonthKey] || 0;
 
         // Calculate percentage based on total achievements from challenge
-        const totalPossibleAchievements = currentChallenge?.totalAchievements || 77; // Fallback to 77 if not specified
+        const totalPossibleAchievements = currentChallenge?.totalAchievements || 109; // Fallback to 77 if not specified
         const completionPercentage = totalPossibleAchievements > 0
           ? (achievementsThisMonth / totalPossibleAchievements) * 100
           : 0;
