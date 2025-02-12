@@ -30,19 +30,8 @@ const platformFullNames: { [key: string]: string } = {
 };
 
 const platformOrder = [
-  'NES',
-  'SNES',
-  'GENESIS',
-  'N64',
-  'PSX',
-  'GB',
-  'GBC',
-  'GBA',
-  'SATURN',
-  'MASTER SYSTEM',
-  'GAME GEAR',
-  'NEO GEO',
-  'TURBOGRAFX-16'
+  'NES', 'SNES', 'GENESIS', 'N64', 'PSX', 'GB', 'GBC', 'GBA',
+  'SATURN', 'MASTER SYSTEM', 'GAME GEAR', 'NEO GEO', 'TURBOGRAFX-16'
 ];
 
 const Nominations = () => {
@@ -50,49 +39,35 @@ const Nominations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    function sendHeight() {
-      const content = document.getElementById('nominations-content');
-      if (content) {
-        // Get the actual full height of all content
-        const fullHeight = Array.from(content.children)
-          .reduce((total, child) => total + child.scrollHeight, 0);
-        
-        // Add extra padding to ensure everything is visible
-        const heightWithPadding = fullHeight + 100;
-        
-        window.parent.postMessage({
-          type: 'resize',
-          height: heightWithPadding
-        }, '*');
-
-        // Send height again after a brief delay to ensure all content is rendered
-        setTimeout(() => {
-          window.parent.postMessage({
-            type: 'resize',
-            height: heightWithPadding
-          }, '*');
-        }, 500);
-      }
-    }
-
-    // Send height after content updates with a delay to ensure rendering
-    if (data) {
-      setTimeout(sendHeight, 100);
-      // Send height again after a longer delay to catch any late updates
-      setTimeout(sendHeight, 1000);
-    }
-  }, [data]);
-
   const fetchData = async () => {
     try {
       const response = await fetch('/api/nominations');
-      if (!response.ok) throw new Error('Failed to fetch nominations');
+      
+      // Log the response status and headers
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch nominations: ${response.status} ${response.statusText}`);
+      }
+      
       const newData = await response.json();
+      
+      // Validate the data structure
+      if (!newData || !Array.isArray(newData.nominations)) {
+        console.error('Invalid data structure received:', newData);
+        throw new Error('Invalid data structure received from API');
+      }
+      
+      // Log the data being set
+      console.log('Setting nominations data:', newData);
+      
       setData(newData);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      console.error('Error fetching nominations:', err);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -104,9 +79,57 @@ const Nominations = () => {
     return () => clearInterval(interval);
   }, []);
 
-  if (loading) return <div className="p-4 text-white">Loading...</div>;
-  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
-  if (!data) return null;
+  useEffect(() => {
+    function sendHeight() {
+      const content = document.getElementById('nominations-content');
+      if (content) {
+        const fullHeight = Array.from(content.children)
+          .reduce((total, child) => total + child.scrollHeight, 0);
+        const heightWithPadding = fullHeight + 100;
+        
+        window.parent.postMessage({
+          type: 'resize',
+          height: heightWithPadding
+        }, '*');
+      }
+    }
+
+    if (data) {
+      setTimeout(sendHeight, 100);
+      setTimeout(sendHeight, 1000);
+    }
+  }, [data]);
+
+  // Early return with more detailed loading and error states
+  if (loading) {
+    return (
+      <div className="p-4 text-white">
+        Loading nominations...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="text-red-500">Error loading nominations: {error}</div>
+        <button 
+          onClick={fetchData}
+          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!data || !data.nominations || data.nominations.length === 0) {
+    return (
+      <div className="p-4 text-white">
+        No nominations found. {data ? 'The nominations list is empty.' : 'Failed to load nominations data.'}
+      </div>
+    );
+  }
 
   const groupedNominations = data.nominations.reduce((acc, nom) => {
     if (!acc[nom.platform]) acc[nom.platform] = [];
@@ -114,7 +137,6 @@ const Nominations = () => {
     return acc;
   }, {} as Record<string, Nomination[]>);
 
-  // Sort games alphabetically within each platform
   Object.values(groupedNominations).forEach(nominations => {
     nominations.sort((a, b) => a.game.localeCompare(b.game));
   });
