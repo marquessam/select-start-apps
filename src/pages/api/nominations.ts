@@ -30,9 +30,6 @@ export default async function handler(
   try {
     const db = await getMongoDb();
     
-    // Get current period (YYYY-MM format)
-    const period = new Date().toISOString().slice(0, 7);
-    
     // Fetch nominations document
     const nominationsDoc = await db
       .collection<NominationDoc>('nominations')
@@ -43,12 +40,28 @@ export default async function handler(
       .collection<StatusDoc>('nominations')
       .findOne({ _id: 'status' });
     
-    const currentNominations = nominationsDoc?.nominations?.[period] || [];
-    const isOpen = statusDoc?.isOpen || false;
+    // Combine all nominations from all periods into a single array
+    const allNominations = nominationsDoc?.nominations
+      ? Object.values(nominationsDoc.nominations).flat()
+      : [];
 
+    // Remove any duplicate nominations (same game)
+    const uniqueNominations = allNominations.reduce((acc, current) => {
+      const exists = acc.find(nom => nom.game === current.game);
+      if (!exists) {
+        acc.push(current);
+      }
+      return acc;
+    }, [] as Array<{
+      game: string;
+      platform: string;
+      discordUsername: string;
+      discordId: string;
+    }>);
+    
     res.status(200).json({
-      nominations: currentNominations,
-      isOpen: isOpen,
+      nominations: uniqueNominations,
+      isOpen: statusDoc?.isOpen || false,
       lastUpdated: new Date().toISOString()
     });
   } catch (error) {
