@@ -9,9 +9,7 @@ interface Nomination {
 
 interface NominationsData {
   _id: string;
-  nominations: {
-    [period: string]: Nomination[];
-  };
+  nominations: Nomination[];
   isOpen: boolean;
   lastUpdated: string;
 }
@@ -41,13 +39,6 @@ const Nominations = () => {
   const [data, setData] = useState<NominationsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPeriod, setCurrentPeriod] = useState('');
-
-  useEffect(() => {
-    // Set current period in YYYY-MM format
-    const now = new Date();
-    setCurrentPeriod(now.toISOString().slice(0, 7));
-  }, []);
 
   const fetchData = async () => {
     try {
@@ -61,7 +52,7 @@ const Nominations = () => {
       const newData = await response.json();
       console.log('Raw nominations data:', newData);
       
-      if (!newData || !newData.nominations) {
+      if (!newData || !Array.isArray(newData.nominations)) {
         throw new Error('Invalid data structure received from API');
       }
       
@@ -99,17 +90,15 @@ const Nominations = () => {
     );
   }
 
-  if (!data || !data.nominations || !data.nominations[currentPeriod]) {
+  if (!data || !data.nominations || data.nominations.length === 0) {
     return (
       <div className="p-4 text-white">
-        No nominations found for the current period.
+        No nominations found.
       </div>
     );
   }
 
-  const currentNominations = data.nominations[currentPeriod] || [];
-  
-  const groupedNominations = currentNominations.reduce((acc, nom) => {
+  const groupedNominations = data.nominations.reduce((acc, nom) => {
     if (!acc[nom.platform]) acc[nom.platform] = [];
     acc[nom.platform].push(nom);
     return acc;
