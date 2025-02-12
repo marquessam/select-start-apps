@@ -8,7 +8,10 @@ interface Nomination {
 }
 
 interface NominationsData {
-  nominations: Nomination[];
+  _id: string;
+  nominations: {
+    [period: string]: Nomination[];
+  };
   isOpen: boolean;
   lastUpdated: string;
 }
@@ -38,36 +41,35 @@ const Nominations = () => {
   const [data, setData] = useState<NominationsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPeriod, setCurrentPeriod] = useState('');
+
+  useEffect(() => {
+    // Set current period in YYYY-MM format
+    const now = new Date();
+    setCurrentPeriod(now.toISOString().slice(0, 7));
+  }, []);
 
   const fetchData = async () => {
     try {
       const response = await fetch('/api/nominations');
-      
-      // Log the response status and headers
       console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         throw new Error(`Failed to fetch nominations: ${response.status} ${response.statusText}`);
       }
       
       const newData = await response.json();
+      console.log('Raw nominations data:', newData);
       
-      // Validate the data structure
-      if (!newData || !Array.isArray(newData.nominations)) {
-        console.error('Invalid data structure received:', newData);
+      if (!newData || !newData.nominations) {
         throw new Error('Invalid data structure received from API');
       }
-      
-      // Log the data being set
-      console.log('Setting nominations data:', newData);
       
       setData(newData);
       setError(null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
       console.error('Error fetching nominations:', err);
-      setError(errorMessage);
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -79,34 +81,8 @@ const Nominations = () => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    function sendHeight() {
-      const content = document.getElementById('nominations-content');
-      if (content) {
-        const fullHeight = Array.from(content.children)
-          .reduce((total, child) => total + child.scrollHeight, 0);
-        const heightWithPadding = fullHeight + 100;
-        
-        window.parent.postMessage({
-          type: 'resize',
-          height: heightWithPadding
-        }, '*');
-      }
-    }
-
-    if (data) {
-      setTimeout(sendHeight, 100);
-      setTimeout(sendHeight, 1000);
-    }
-  }, [data]);
-
-  // Early return with more detailed loading and error states
   if (loading) {
-    return (
-      <div className="p-4 text-white">
-        Loading nominations...
-      </div>
-    );
+    return <div className="p-4 text-white">Loading nominations...</div>;
   }
 
   if (error) {
@@ -123,15 +99,17 @@ const Nominations = () => {
     );
   }
 
-  if (!data || !data.nominations || data.nominations.length === 0) {
+  if (!data || !data.nominations || !data.nominations[currentPeriod]) {
     return (
       <div className="p-4 text-white">
-        No nominations found. {data ? 'The nominations list is empty.' : 'Failed to load nominations data.'}
+        No nominations found for the current period.
       </div>
     );
   }
 
-  const groupedNominations = data.nominations.reduce((acc, nom) => {
+  const currentNominations = data.nominations[currentPeriod] || [];
+  
+  const groupedNominations = currentNominations.reduce((acc, nom) => {
     if (!acc[nom.platform]) acc[nom.platform] = [];
     acc[nom.platform].push(nom);
     return acc;
@@ -158,6 +136,15 @@ const Nominations = () => {
             color: 'white',
             margin: 0
           }}>Game Nominations</h2>
+          {!data.isOpen && (
+            <span style={{
+              marginLeft: 'auto',
+              color: '#ff4444',
+              fontSize: '0.875rem'
+            }}>
+              Nominations are currently closed
+            </span>
+          )}
         </div>
 
         <div style={{ padding: '16px' }}>
