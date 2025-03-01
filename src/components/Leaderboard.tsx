@@ -153,6 +153,24 @@ const Leaderboard = () => {
 
   const currentData = activeTab === 'monthly' ? monthlyData : yearlyData;
 
+  // Helper function to properly handle image URLs
+  const getImageUrl = (imageIcon: string | undefined) => {
+    if (!imageIcon) return 'https://retroachievements.org/Images/017657.png';
+    
+    // If it's a full URL (starts with http or https), use it directly
+    if (imageIcon.startsWith('http')) {
+      return imageIcon;
+    }
+    
+    // Special case for March 2025 Mega Man X5
+    if (activeTab === 'monthly' && monthlyData?.gameInfo?.Title === 'Mega Man X5') {
+      return 'https://media.retroachievements.org/Images/056204.png';
+    }
+    
+    // Otherwise, prepend the RetroAchievements base URL
+    return `https://retroachievements.org${imageIcon}`;
+  };
+
   return (
     <div id="leaderboard-container" className="bg-[#17254A] flex flex-col min-h-min max-h-fit">
       <div className="tab-container m-0">
@@ -174,7 +192,7 @@ const Leaderboard = () => {
         <>
           <div className="game-header">
             <img
-              src={`https://retroachievements.org${monthlyData.gameInfo.ImageIcon}`} 
+              src={getImageUrl(monthlyData.gameInfo.ImageIcon)}
               alt={monthlyData.gameInfo.Title}
               onError={e => {
                 e.currentTarget.src = 'https://retroachievements.org/Images/017657.png';
