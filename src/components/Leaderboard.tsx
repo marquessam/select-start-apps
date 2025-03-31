@@ -2,32 +2,35 @@ import React, { useState, useEffect } from 'react';
 
 interface LeaderboardEntry {
   username: string;
-  profileImage: string;
-  profileUrl: string;
   completedAchievements?: number;
   totalAchievements?: number;
-  completionPercentage?: number;
+  completionPercentage?: string;
   hasBeatenGame?: boolean;
+  award?: string; // 'MASTERY', 'BEATEN', or 'PARTICIPATION'
   points?: number;
   rank?: number;
 }
 
 interface GameInfo {
-  Title: string;
-  ImageIcon: string;
+  title: string;
+  id: string; // game ID
+  imageIcon?: string;
 }
 
 interface LeaderboardData {
   gameInfo?: GameInfo;
   leaderboard: LeaderboardEntry[];
-  additionalParticipants: string[];
   lastUpdated: string;
 }
 
 const processMonthlyRanks = (entries: LeaderboardEntry[]): LeaderboardEntry[] => {
     // Sort monthly entries
     const sortedEntries = [...entries].sort((a, b) => {
-        const percentDiff = (b.completionPercentage || 0) - (a.completionPercentage || 0);
+        // Convert string percentages to numbers for comparison
+        const aPercentage = parseFloat(a.completionPercentage || '0');
+        const bPercentage = parseFloat(b.completionPercentage || '0');
+        
+        const percentDiff = bPercentage - aPercentage;
         if (percentDiff !== 0) return percentDiff;
         return (b.completedAchievements || 0) - (a.completedAchievements || 0);
     });
@@ -37,7 +40,7 @@ const processMonthlyRanks = (entries: LeaderboardEntry[]): LeaderboardEntry[] =>
     let previousAchievements: number | null = null;
     
     return sortedEntries.map((entry, index) => {
-        const currentPercentage = entry.completionPercentage || 0;
+        const currentPercentage = parseFloat(entry.completionPercentage || '0');
         const currentAchievements = entry.completedAchievements || 0;
         
         if (index === 0) {
@@ -126,13 +129,46 @@ const Leaderboard = () => {
       
       const monthlyData = await monthlyResponse.json();
       const yearlyData = await yearlyResponse.json();
+
+      // Format monthly data to match the expected interface
+      const formattedMonthlyData: LeaderboardData = {
+        gameInfo: {
+          title: monthlyData.gameInfo?.title || "Monthly Challenge",
+          id: monthlyData.gameInfo?.id || "",
+          imageIcon: monthlyData.gameInfo?.imageIcon || ""
+        },
+        leaderboard: monthlyData.leaderboard.map((entry: any) => ({
+          username: entry.username,
+          completedAchievements: entry.completedAchievements || 0,
+          totalAchievements: entry.totalAchievements || 0,
+          completionPercentage: typeof entry.completionPercentage === 'number' 
+            ? entry.completionPercentage.toFixed(2) 
+            : entry.completionPercentage || '0.00',
+          hasBeatenGame: entry.hasBeatenGame || false,
+          award: entry.award || '',
+          profileImage: entry.profileImage || `https://retroachievements.org/UserPic/${entry.username}.png`,
+          profileUrl: entry.profileUrl || `https://retroachievements.org/user/${entry.username}`
+        })),
+        lastUpdated: monthlyData.lastUpdated || new Date().toISOString()
+      };
+      
+      // Format yearly data
+      const formattedYearlyData: LeaderboardData = {
+        leaderboard: yearlyData.leaderboard.map((entry: any) => ({
+          username: entry.username,
+          points: entry.totalPoints || 0,
+          profileImage: entry.profileImage || `https://retroachievements.org/UserPic/${entry.username}.png`,
+          profileUrl: entry.profileUrl || `https://retroachievements.org/user/${entry.username}`
+        })),
+        lastUpdated: yearlyData.lastUpdated || new Date().toISOString()
+      };
       
       // Process each leaderboard separately
-      monthlyData.leaderboard = processMonthlyRanks(monthlyData.leaderboard);
-      yearlyData.leaderboard = processYearlyRanks(yearlyData.leaderboard);
+      formattedMonthlyData.leaderboard = processMonthlyRanks(formattedMonthlyData.leaderboard);
+      formattedYearlyData.leaderboard = processYearlyRanks(formattedYearlyData.leaderboard);
       
-      setMonthlyData(monthlyData);
-      setYearlyData(yearlyData);
+      setMonthlyData(formattedMonthlyData);
+      setYearlyData(formattedYearlyData);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -162,14 +198,28 @@ const Leaderboard = () => {
       return imageIcon;
     }
     
-    // Special case for March 2025 Mega Man X5
-    if (activeTab === 'monthly' && monthlyData?.gameInfo?.Title === 'Mega Man X5') {
-      return 'https://media.retroachievements.org/Images/056204.png';
-    }
-    
     // Otherwise, prepend the RetroAchievements base URL
     return `https://retroachievements.org${imageIcon}`;
   };
+
+  // Helper to get appropriate icon for award status
+  const getAwardIcon = (entry: LeaderboardEntry) => {
+    if (activeTab !== 'monthly') return null;
+
+    if (entry.award === 'MASTERY') return '✨';
+    if (entry.award === 'BEATEN') return '⭐';
+    if (entry.award === 'PARTICIPATION') return '🏁';
+    
+    // If no explicit award but has high completion
+    if (parseFloat(entry.completionPercentage || '0') === 100) return '✨';
+    if (entry.hasBeatenGame) return '⭐';
+    
+    return null;
+  };
+
+  const currentDate = new Date();
+  const currentMonth = currentDate.toLocaleString('default', { month: 'long' });
+  const currentYear = currentDate.getFullYear();
 
   return (
     <div id="leaderboard-container" className="bg-[#17254A] flex flex-col min-h-min max-h-fit">
@@ -192,22 +242,21 @@ const Leaderboard = () => {
         <>
           <div className="game-header">
             <img
-              src={getImageUrl(monthlyData.gameInfo.ImageIcon)}
-              alt={monthlyData.gameInfo.Title}
+              src={getImageUrl(monthlyData.gameInfo.imageIcon)}
+              alt={monthlyData.gameInfo.title}
               onError={e => {
                 e.currentTarget.src = 'https://retroachievements.org/Images/017657.png';
               }}
             />
-            <h2 className="game-title">{monthlyData.gameInfo.Title}</h2>
+            <h2 className="game-title">{monthlyData.gameInfo.title}</h2>
           </div>
 
           <div className="challenge-list">
-            &gt; This challenge runs from March 1st, 2025 to March 31st, 2025.<br />
-            &gt; Hardcore mode must be enabled <br />
-            &gt; All achievements are eligible<br />
-            &gt; Progress tracked via retroachievements<br />
+            &gt; This challenge runs from {currentMonth} 1st, {currentYear} to {currentMonth} {new Date(currentYear, currentDate.getMonth() + 1, 0).getDate()}th, {currentYear}.<br />
+            &gt; Earn achievements using RetroAchievements<br />
+            &gt; Beat the game by earning progression/win achievements<br />
+            &gt; Mastery by earning all achievements<br />
             &gt; No hacks/save states/cheats allowed<br />
-            &gt; Any discrepancies, ties, or edge case situations will be judged case by case and settled upon in the multiplayer game of each combatant's choosing.
           </div>
         </>
       )}
@@ -244,7 +293,12 @@ const Leaderboard = () => {
               <div className="flex flex-col gap-0.5">
                 {activeTab === 'monthly' ? (
                   <>
-                    <div>{entry.completedAchievements}/{entry.totalAchievements}</div>
+                    <div className="flex items-center">
+                      <span>{entry.completedAchievements}/{entry.totalAchievements}</span>
+                      {getAwardIcon(entry) && (
+                        <span className="ml-2">{getAwardIcon(entry)}</span>
+                      )}
+                    </div>
                     <div>{entry.completionPercentage}%</div>
                   </>
                 ) : (
