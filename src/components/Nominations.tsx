@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 
 interface Nomination {
-  game: string;
-  platform: string;
-  discordUsername: string;
-  discordId: string;
+  gameId: string;
+  game?: string;
+  platform?: string;
+  nominatedBy: string;
+  nominatedAt?: Date;
 }
 
 interface NominationsData {
-  _id: string;
   nominations: Nomination[];
-  isOpen: boolean;
   lastUpdated: string;
+  isOpen?: boolean;
 }
 
+// Platform name mappings for display
 const platformFullNames: { [key: string]: string } = {
   'NES': 'Nintendo Entertainment System',
   'SNES': 'Super Nintendo',
@@ -30,6 +31,7 @@ const platformFullNames: { [key: string]: string } = {
   'TURBOGRAFX-16': 'TurboGrafx-16'
 };
 
+// Platform display order
 const platformOrder = [
   'NES', 'SNES', 'GENESIS', 'N64', 'PSX', 'GB', 'GBC', 'GBA',
   'SATURN', 'MASTER SYSTEM', 'GAME GEAR', 'NEO GEO', 'TURBOGRAFX-16'
@@ -49,14 +51,23 @@ const Nominations = () => {
         throw new Error(`Failed to fetch nominations: ${response.status} ${response.statusText}`);
       }
       
-      const newData = await response.json();
-      console.log('Raw nominations data:', newData);
+      const rawData = await response.json();
+      console.log('Raw nominations data:', rawData);
       
-      if (!newData || !Array.isArray(newData.nominations)) {
-        throw new Error('Invalid data structure received from API');
-      }
+      // Format to match the expected structure
+      const formattedData: NominationsData = {
+        nominations: rawData.nominations.map((nom: any) => ({
+          gameId: nom.gameId,
+          game: nom.game || nom.title || nom.gameTitle || `Game ${nom.gameId}`,
+          platform: nom.platform || nom.consoleName || 'Unknown',
+          nominatedBy: nom.nominatedBy || nom.raUsername || nom.username || 'Unknown User',
+          nominatedAt: nom.nominatedAt ? new Date(nom.nominatedAt) : undefined
+        })),
+        lastUpdated: rawData.lastUpdated || new Date().toISOString(),
+        isOpen: rawData.isOpen !== undefined ? rawData.isOpen : true
+      };
       
-      setData(newData);
+      setData(formattedData);
       setError(null);
     } catch (err) {
       console.error('Error fetching nominations:', err);
@@ -68,17 +79,35 @@ const Nominations = () => {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 300000);
+    const interval = setInterval(fetchData, 300000); // Refresh every 5 minutes
     return () => clearInterval(interval);
   }, []);
 
+  // Update container height for iframe resizing
+  useEffect(() => {
+    const updateHeight = () => {
+      const content = document.getElementById('nominations-content');
+      if (content && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'resize',
+          height: content.getBoundingClientRect().height
+        }, '*');
+      }
+    };
+
+    if (!loading && data) {
+      // Update height after render completes
+      setTimeout(updateHeight, 100);
+    }
+  }, [loading, data]);
+
   if (loading) {
-    return <div className="p-4 text-white">Loading nominations...</div>;
+    return <div id="nominations-content" className="p-4 text-white" style={{ backgroundColor: '#17254A' }}>Loading nominations...</div>;
   }
 
   if (error) {
     return (
-      <div className="p-4">
+      <div id="nominations-content" className="p-4" style={{ backgroundColor: '#17254A' }}>
         <div className="text-red-500">Error loading nominations: {error}</div>
         <button 
           onClick={fetchData}
@@ -92,21 +121,28 @@ const Nominations = () => {
 
   if (!data || !data.nominations || data.nominations.length === 0) {
     return (
-      <div className="p-4 text-white">
+      <div id="nominations-content" className="p-4 text-white" style={{ backgroundColor: '#17254A' }}>
         No nominations found.
       </div>
     );
   }
 
+  // Group nominations by platform
   const groupedNominations = data.nominations.reduce((acc, nom) => {
-    if (!acc[nom.platform]) acc[nom.platform] = [];
-    acc[nom.platform].push(nom);
+    const platform = nom.platform || 'Unknown';
+    if (!acc[platform]) acc[platform] = [];
+    acc[platform].push(nom);
     return acc;
   }, {} as Record<string, Nomination[]>);
 
+  // Sort nominations alphabetically within each platform
   Object.values(groupedNominations).forEach(nominations => {
-    nominations.sort((a, b) => a.game.localeCompare(b.game));
+    nominations.sort((a, b) => (a.game || '').localeCompare(b.game || ''));
   });
+
+  // Get current month and year for display
+  const now = new Date();
+  const monthName = now.toLocaleString('default', { month: 'long' });
 
   return (
     <div id="nominations-content" style={{ backgroundColor: '#17254A' }}>
@@ -124,8 +160,8 @@ const Nominations = () => {
             fontWeight: 'bold',
             color: 'white',
             margin: 0
-          }}>Game Nominations</h2>
-          {!data.isOpen && (
+          }}>{monthName} Game Nominations</h2>
+          {data.isOpen === false && (
             <span style={{
               marginLeft: 'auto',
               color: '#ff4444',
@@ -137,6 +173,7 @@ const Nominations = () => {
         </div>
 
         <div style={{ padding: '16px' }}>
+          {/* First display platforms in the specified order */}
           {platformOrder
             .filter(platform => groupedNominations[platform])
             .map((platform) => (
@@ -155,7 +192,7 @@ const Nominations = () => {
                 </div>
                 {groupedNominations[platform].map((nom, index) => (
                   <div 
-                    key={`${nom.game}-${index}`}
+                    key={`${nom.gameId}-${index}`}
                     style={{
                       padding: '8px 16px',
                       backgroundColor: '#1f2b4d',
@@ -170,7 +207,48 @@ const Nominations = () => {
                     <span style={{ 
                       color: '#32CD32',
                       fontSize: '0.875rem'
-                    }}>nominated by {nom.discordUsername}</span>
+                    }}>nominated by {nom.nominatedBy}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          
+          {/* Then display any remaining platforms not in the order list */}
+          {Object.keys(groupedNominations)
+            .filter(platform => !platformOrder.includes(platform))
+            .sort()
+            .map((platform) => (
+              <div key={platform} style={{ marginBottom: '16px' }}>
+                <div style={{ 
+                  backgroundColor: '#2a3a6a',
+                  padding: '12px 16px',
+                  marginBottom: '1px'
+                }}>
+                  <h3 style={{
+                    fontSize: '1.125rem',
+                    fontWeight: 'bold',
+                    color: 'white',
+                    margin: 0
+                  }}>{platformFullNames[platform] || platform}</h3>
+                </div>
+                {groupedNominations[platform].map((nom, index) => (
+                  <div 
+                    key={`${nom.gameId}-${index}`}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: '#1f2b4d',
+                      color: 'white',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '8px'
+                    }}
+                  >
+                    <span style={{ fontWeight: '500' }}>{nom.game}</span>
+                    <span style={{ 
+                      color: '#32CD32',
+                      fontSize: '0.875rem'
+                    }}>nominated by {nom.nominatedBy}</span>
                   </div>
                 ))}
               </div>
