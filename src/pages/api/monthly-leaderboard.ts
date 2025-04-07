@@ -1,105 +1,54 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getMongoDb } from '@/utils/mongodb';
-import { Document, Filter } from 'mongodb';
-
-interface LeaderboardEntry {
-  username: string;
-  profileImage: string;
-  profileUrl: string;
-  completedAchievements: number;
-  totalAchievements: number;
-  completionPercentage: number;
-  hasBeatenGame: boolean;
-}
-
-interface GameInfo {
-  Title: string;
-  ImageIcon: string;
-}
-
-interface LeaderboardResponse {
-  gameInfo: GameInfo;
-  leaderboard: LeaderboardEntry[];
-  additionalParticipants: string[];
-  lastUpdated: string;
-}
-
-interface ErrorResponse {
-  error: string;
-  details?: string;
-}
-
-interface UserMonthlyStats {
-  monthlyAchievements: {
-    [year: string]: {
-      [month: string]: number;
-    };
-  };
-  completedGames: Record<string, boolean>;
-}
-
-interface UserStats extends Document {
-  _id: 'stats';
-  users: {
-    [username: string]: UserMonthlyStats;
-  };
-}
-
-interface Challenge extends Document {
-  _id: 'current';
-  gameName?: string;
-  gameIcon?: string;
-  totalAchievements?: number;
-}
-
-let cachedData: LeaderboardResponse | null = null;
-let lastUpdateTime: number | null = null;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<LeaderboardResponse | ErrorResponse>
+  res: NextApiResponse
 ) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const now = Date.now();
-    if (cachedData && lastUpdateTime && (now - lastUpdateTime < CACHE_DURATION)) {
-      console.log('Returning cached leaderboard data');
-      return res.status(200).json(cachedData);
-    }
-
-    console.log('Fetching fresh leaderboard data');
+    // Force cache bypass
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    
     const db = await getMongoDb();
 
-    // Get challenge info
-    const currentChallenge = await db.collection<Challenge>('challenges')
-      .findOne({ _id: 'current' } as Filter<Challenge>);
+    // Get challenge info - exactly matching what the bot stores
+    const currentChallenge = await db.collection('challenges')
+      .findOne({ _id: 'current' });
 
-    // Get user stats
-    const stats = await db.collection<UserStats>('userstats')
-      .findOne({ _id: 'stats' } as Filter<UserStats>);
-
-    if (!stats?.users) {
-      throw new Error('No user stats found');
+    if (!currentChallenge) {
+      return res.status(404).json({ error: 'No active challenge found' });
     }
 
-    // Get the current month in the format used in your data (YYYY-M)
+    // Get user stats - exactly matching what the bot stores
+    const stats = await db.collection('userstats')
+      .findOne({ _id: 'stats' });
+    
+    if (!stats?.users) {
+      return res.status(404).json({ error: 'No user stats found' });
+    }
+
+    // Get current date and generate current month key
     const date = new Date();
     const year = date.getFullYear().toString();
     const monthIndex = date.getMonth(); // 0-11
-    const currentMonthKey = `${year}-${monthIndex}`; // Matches your "2025-0" format
+    const currentMonthKey = `${year}-${monthIndex}`; // Match the bot's format
+    
+    console.log('Current month key:', currentMonthKey);
+    console.log('Total achievements:', currentChallenge.totalAchievements);
 
     // Transform data into leaderboard format
     const leaderboard = Object.entries(stats.users)
       .map(([username, userData]) => {
+        const userStats = userData as any;
         const achievementsThisMonth = 
-          userData.monthlyAchievements?.[year]?.[currentMonthKey] || 0;
+          userStats.monthlyAchievements?.[year]?.[currentMonthKey] || 0;
 
-        // Calculate percentage based on total achievements from challenge
-        const totalPossibleAchievements = currentChallenge?.totalAchievements || 109; // Fallback to 77 if not specified
+        // Get completion percentage
+        const totalPossibleAchievements = currentChallenge.totalAchievements || 0;
         const completionPercentage = totalPossibleAchievements > 0
           ? (achievementsThisMonth / totalPossibleAchievements) * 100
           : 0;
@@ -111,7 +60,7 @@ export default async function handler(
           completedAchievements: achievementsThisMonth,
           totalAchievements: totalPossibleAchievements,
           completionPercentage: parseFloat(completionPercentage.toFixed(2)),
-          hasBeatenGame: !!userData.completedGames?.[currentMonthKey]
+          hasBeatenGame: !!userStats.completedGames?.[currentMonthKey]
         };
       })
       .filter(user => user.completedAchievements > 0)
@@ -121,21 +70,17 @@ export default async function handler(
         return b.completedAchievements - a.completedAchievements;
       });
 
-    const response: LeaderboardResponse = {
+    const response = {
       gameInfo: {
-        Title: currentChallenge?.gameName || "Current Challenge",
-        ImageIcon: currentChallenge?.gameIcon || "/Images/093950.png"
+        Title: currentChallenge.gameName || "Current Challenge",
+        ImageIcon: currentChallenge.gameIcon || "/Images/093950.png"
       },
-      leaderboard: leaderboard.slice(0, 10),
-      additionalParticipants: leaderboard.slice(10).map(u => u.username),
+      leaderboard: leaderboard,
+      additionalParticipants: [],
       lastUpdated: new Date().toISOString()
     };
 
-    // Update cache
-    cachedData = response;
-    lastUpdateTime = now;
-
-    console.log('Successfully fetched and processed leaderboard data');
+    console.log(`Successfully returned ${leaderboard.length} leaderboard entries`);
     return res.status(200).json(response);
   } catch (error) {
     console.error('API Error:', error);
