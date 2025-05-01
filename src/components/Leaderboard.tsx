@@ -195,14 +195,14 @@ const Leaderboard = () => {
               src={getImageUrl(monthlyData.gameInfo.ImageIcon)}
               alt={monthlyData.gameInfo.Title}
               onError={e => {
-                e.currentTarget.src = 'https://retroachievements.org/Images/017657.png';
+                e.currentTarget.src = 'https://retroachievements.org/Images/064539.png';
               }}
             />
             <h2 className="game-title">{monthlyData.gameInfo.Title}</h2>
           </div>
 
           <div className="challenge-list">
-            &gt; This challenge runs from March 1st, 2025 to March 31st, 2025.<br />
+            &gt; This challenge runs from May 1st, 2025 to May 31st, 2025.<br />
             &gt; Hardcore mode must be enabled <br />
             &gt; All achievements are eligible<br />
             &gt; Progress tracked via retroachievements<br />
